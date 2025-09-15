@@ -10,6 +10,7 @@ import { AlertsProvider } from "@/context/AlertsContext"
 import { SalesProvider } from "@/context/sales-context"
 import { ConfigurationProvider } from "@/context/configuration-context"
 import { InventoryProvider } from "@/context/inventory-context"
+import { BusinessProvider } from "@/context/business-context"
 
 export const metadata: Metadata = {
   title: "PharmaCare - Sistema de Inventario",
@@ -34,12 +35,14 @@ export default function RootLayout({
           <ConfigurationProvider>
             <AuthProvider>
               <AlertsProvider>
-                <SalesProvider>
-                  <InventoryProvider>
-                    <ConditionalNav />
-                    {children}
-                  </InventoryProvider>
-                </SalesProvider>
+                <BusinessProvider>
+                  <SalesProvider>
+                    <InventoryProvider>
+                      <ConditionalNav />
+                      {children}
+                    </InventoryProvider>
+                  </SalesProvider>
+                </BusinessProvider>
               </AlertsProvider>
             </AuthProvider>
           </ConfigurationProvider>

@@ -7,6 +7,8 @@ import { ProductSearch } from "./register/product-search";
 import { ShoppingCarta } from "./register/shopping-cart";
 import { CustomerDialog } from "./register/customer-dialog";
 import { CheckoutDialog } from "./register/checkout-dialog";
+import { useBusiness } from "@/context/business-context";
+
 
 
 export function SalesRegister() {
@@ -18,6 +20,7 @@ export function SalesRegister() {
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
+  const { businessInfo } = useBusiness();
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -30,6 +33,7 @@ export function SalesRegister() {
   const tax = (subtotal - totalDiscount) * 0.18;
   const total = subtotal - totalDiscount + tax;
 
+  // Actualiza la función processSale para usar la información de la empresa
   const processSale = () => {
     if (cart.length === 0) {
       toast({
@@ -40,7 +44,7 @@ export function SalesRegister() {
       return;
     }
 
-    addSale({
+    const saleData = {
       customer,
       items: [...cart],
       subtotal,
@@ -49,7 +53,9 @@ export function SalesRegister() {
       total,
       paymentMethod,
       cashier: "Usuario Actual",
-    });
+    };
+
+    addSale(saleData);
 
     setCart([]);
     setCustomer({});
@@ -98,7 +104,16 @@ export function SalesRegister() {
         setPaymentMethod={setPaymentMethod}
         total={total}
         customer={customer}
+        setCustomer={setCustomer}
         onProcessSale={processSale}
+        onAddNewCustomer={() => {
+          // Aquí puedes redirigir a la página de clientes o abrir un modal
+          toast({
+            title: "Funcionalidad de agregar cliente",
+            description: "Redirigiendo a gestión de clientes...",
+          });
+          // Ejemplo: router.push('/clientes');
+        }}
       />
     </div>
   );

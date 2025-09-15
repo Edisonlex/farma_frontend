@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemConfig } from "./configuration-context";
+import { PdfService, InvoiceData } from "@/lib/pdf-service";
 
 export interface CartItem {
   id: string;
@@ -75,6 +76,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("pharmacy-sales", JSON.stringify(sales));
   }, [sales]);
 
+  // Actualiza la función addSale para generar el PDF
   const addSale = (saleData: Omit<Sale, "id" | "date" | "status">) => {
     const newSale: Sale = {
       ...saleData,
@@ -84,6 +86,22 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     };
 
     setSales((prev) => [...prev, newSale]);
+
+    // Generar PDF de la factura
+    const invoiceData: InvoiceData = {
+      sale: newSale,
+      customer: saleData.customer,
+      invoiceNumber: newSale.id,
+      businessInfo: {
+        name: "Farmacia Salud Total",
+        address: "Av. Principal #123, Ciudad",
+        ruc: "20100066603",
+        phone: "+51 123 456 789",
+        email: "ventas@farmaciasaludtotal.com",
+      },
+    };
+
+    PdfService.downloadInvoice(invoiceData, `Factura-${newSale.id}.pdf`);
 
     toast({
       title: "Venta registrada",

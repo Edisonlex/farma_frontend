@@ -9,16 +9,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CheckCircle, Sparkles } from "lucide-react";
 import { Customer } from "@/context/sales-context";
+import { CustomerSelector } from "../process/customer-selector";
+import { PaymentMethodSelector } from "../process/payment-method-selector";
 
 interface CheckoutDialogProps {
   open: boolean;
@@ -27,7 +21,9 @@ interface CheckoutDialogProps {
   setPaymentMethod: (method: string) => void;
   total: number;
   customer: Customer;
+  setCustomer: (customer: Customer) => void;
   onProcessSale: () => void;
+  onAddNewCustomer: () => void;
 }
 
 export function CheckoutDialog({
@@ -37,13 +33,15 @@ export function CheckoutDialog({
   setPaymentMethod,
   total,
   customer,
+  setCustomer,
   onProcessSale,
+  onAddNewCustomer,
 }: CheckoutDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleProcessSale = async () => {
     setIsProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Simular procesamiento
+    await new Promise((resolve) => setTimeout(resolve, 500));
     onProcessSale();
     setIsProcessing(false);
   };
@@ -58,31 +56,16 @@ export function CheckoutDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Método de Pago</Label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-              <SelectTrigger className="border-border/50">
-                <SelectValue placeholder="Seleccionar método" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash" className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-chart-5"></div>
-                  Efectivo
-                </SelectItem>
-                <SelectItem value="card" className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-chart-1"></div>
-                  Tarjeta
-                </SelectItem>
-                <SelectItem
-                  value="transfer"
-                  className="flex items-center gap-2"
-                >
-                  <div className="w-2 h-2 rounded-full bg-chart-3"></div>
-                  Transferencia
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <CustomerSelector
+            customer={customer}
+            setCustomer={setCustomer}
+            onAddNewCustomer={onAddNewCustomer}
+          />
+
+          <PaymentMethodSelector
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+          />
 
           <div className="p-4 bg-accent/10 rounded-lg border border-accent/20">
             <div className="text-2xl font-bold text-center text-foreground">
