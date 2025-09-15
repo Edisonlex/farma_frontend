@@ -1,3 +1,4 @@
+// components/medications/medications-table-row.tsx (actualizado)
 import { TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,10 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import type { Medication } from "@/lib/mock-data";
+
 import { getExpiryStatus, getStockStatus } from "@/utils/statusUtils";
+import { useInventory } from "@/context/inventory-context";
+import { Medication } from "..";
 
 interface MedicationsTableRowProps {
   medication: Medication;
@@ -34,6 +37,7 @@ export function MedicationsTableRow({
   onDelete,
   onViewDetails,
 }: MedicationsTableRowProps) {
+  const { getCategoryName, getSupplierName } = useInventory();
   const stockStatus = getStockStatus(medication);
   const expiryStatus = getExpiryStatus(medication.expiryDate);
 
@@ -89,7 +93,7 @@ export function MedicationsTableRow({
           variant="secondary"
           className="text-xs bg-primary/10 text-primary hover:bg-primary/15 border-0"
         >
-          {medication.category}
+          {getCategoryName(medication.category)}
         </Badge>
       </TableCell>
 
@@ -132,7 +136,7 @@ export function MedicationsTableRow({
 
       <TableCell className="py-3 px-4">
         <span className="text-sm text-foreground/85 font-medium">
-          {medication.supplier}
+          {getSupplierName(medication.supplier)}
         </span>
       </TableCell>
 
@@ -158,7 +162,7 @@ export function MedicationsTableRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="bg-background border-border shadow-md rounded-md border" // Añadido "border" aquí
+            className="bg-background border-border shadow-md rounded-md border"
           >
             <DropdownMenuItem
               onClick={() => onViewDetails(medication)}
@@ -178,8 +182,8 @@ export function MedicationsTableRow({
             )}
             {onDelete && (
               <DropdownMenuItem
-                onClick={() => onDelete(medication.id)}
-                className="cursor-pointer text-destructive text-sm px-3 py-2 focus:bg-destructive/15 focus:text-destructive" // Añadido focus:text-destructive
+                onClick={() => onDelete && onDelete(medication.id)}
+                className="cursor-pointer text-destructive text-sm px-3 py-2 focus:bg-destructive/15 focus:text-destructive"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Eliminar

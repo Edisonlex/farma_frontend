@@ -55,12 +55,17 @@ export const rolePermissions = {
     "manage_medications",
     "manage_inventory",
     "manage_alerts",
+    "view_alerts",
     "view_analytics",
     "generate_reports",
     "manage_users",
     "manage_sales",
     "view_sales_reports",
     "manage_cash_register",
+    "process_sales",
+    "view_inventory",
+    "manage_categories",
+    "manage_suppliers",
   ],
   farmaceutico: [
     "view_dashboard",
@@ -72,8 +77,14 @@ export const rolePermissions = {
     "manage_sales",
     "view_sales_reports",
   ],
-  tecnico: ["view_dashboard", "view_medications", "view_inventory", "view_alerts", "process_sales"],
-}
+  tecnico: [
+    "view_dashboard",
+    "view_medications",
+    "view_inventory",
+    "view_alerts",
+    "process_sales",
+  ],
+};
 
 export function hasPermission(role: UserRole, permission: string): boolean {
   return rolePermissions[role]?.includes(permission) || false

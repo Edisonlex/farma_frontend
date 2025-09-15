@@ -19,6 +19,8 @@ import {
   ShoppingCart,
   ArrowRight,
   Sparkles,
+  Tags,
+  Truck,
 } from "lucide-react";
 import { getInventoryAnalytics } from "@/lib/mock-data";
 import { useAuth } from "@/hooks/use-auth";
@@ -28,6 +30,17 @@ export default function QuickActions() {
   const { user } = useAuth();
   const analytics = getInventoryAnalytics();
 
+  console.log("Usuario actual:", user);
+  console.log("Rol:", user?.role);
+  console.log(
+    "Tiene manage_sales:",
+    user && hasPermission(user.role, "manage_sales")
+  );
+  console.log(
+    "Tiene process_sales:",
+    user && hasPermission(user.role, "process_sales")
+  );
+
   const quickActions = [
     {
       title: "Punto de Venta",
@@ -35,7 +48,7 @@ export default function QuickActions() {
       icon: ShoppingCart,
       color: "bg-chart-5",
       gradient: "from-chart-5 to-chart-5/80",
-      permission: "manage_sales",
+      permission: ["manage_sales", "process_sales"], // Múltiples permisos aceptados
       href: "/ventas",
     },
     {
@@ -47,15 +60,15 @@ export default function QuickActions() {
       permission: "manage_medications",
       href: "/medicamentos",
     },
-    {
-      title: "Ver Alertas",
-      description: `${analytics.totalAlerts} alertas pendientes`,
-      icon: Bell,
-      color: "bg-destructive",
-      gradient: "from-destructive to-destructive/80",
-      permission: "view_alerts",
-      href: "/alertas",
-    },
+    // {
+    //   title: "Ver Alertas",
+    //   description: `${analytics.totalAlerts} alertas pendientes`,
+    //   icon: Bell,
+    //   color: "bg-destructive",
+    //   gradient: "from-destructive to-destructive/80",
+    //   permission: "view_alerts",
+    //   href: "/alertas",
+    // },
     {
       title: "Análisis Predictivo",
       description: "Predicciones de demanda y stock",
@@ -92,6 +105,24 @@ export default function QuickActions() {
       permission: "view_inventory",
       href: "/inventario",
     },
+    {
+      title: "Gestionar Categorías",
+      description: "Administrar categorías de medicamentos",
+      icon: Tags,
+      color: "bg-chart-4",
+      gradient: "from-chart-4 to-chart-4/80",
+      permission: "manage_categories",
+      href: "/categorias",
+    },
+    {
+      title: "Gestionar Proveedores",
+      description: "Administrar proveedores de medicamentos",
+      icon: Truck,
+      color: "bg-chart-6",
+      gradient: "from-chart-6 to-chart-6/80",
+      permission: "manage_suppliers",
+      href: "/proveedores",
+    },
   ];
 
   return (
@@ -120,9 +151,29 @@ export default function QuickActions() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {quickActions.map((action, index) => {
-              const canAccess =
-                !action.permission ||
-                (user && hasPermission(user.role, action.permission));
+              // LÓGICA DE PERMISOS MEJORADA
+              let canAccess = false;
+
+              if (!action.permission) {
+                canAccess = true;
+              } else if (user) {
+                if (Array.isArray(action.permission)) {
+                  canAccess = action.permission.some((perm) =>
+                    hasPermission(user.role, perm)
+                  );
+                } else {
+                  canAccess = hasPermission(user.role, action.permission);
+                }
+              }
+
+              // DEBUG: Verificar cada acción
+              console.log(
+                `Acción: ${
+                  action.title
+                }, Puede acceder: ${canAccess}, Permisos requeridos: ${JSON.stringify(
+                  action.permission
+                )}`
+              );
 
               if (!canAccess) return null;
 
@@ -181,11 +232,19 @@ export default function QuickActions() {
           </div>
 
           {/* Footer con estadísticas */}
-          {quickActions.some(
-            (action) =>
-              !action.permission ||
-              (user && hasPermission(user.role, action.permission))
-          ) && (
+          {quickActions.some((action) => {
+            // Misma lógica de permisos para el contador
+            if (!action.permission) return true;
+            if (!user) return false;
+
+            if (Array.isArray(action.permission)) {
+              return action.permission.some((perm) =>
+                hasPermission(user.role, perm)
+              );
+            } else {
+              return hasPermission(user.role, action.permission);
+            }
+          }) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -195,11 +254,18 @@ export default function QuickActions() {
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
                   {
-                    quickActions.filter(
-                      (action) =>
-                        !action.permission ||
-                        (user && hasPermission(user.role, action.permission))
-                    ).length
+                    quickActions.filter((action) => {
+                      if (!action.permission) return true;
+                      if (!user) return false;
+
+                      if (Array.isArray(action.permission)) {
+                        return action.permission.some((perm) =>
+                          hasPermission(user.role, perm)
+                        );
+                      } else {
+                        return hasPermission(user.role, action.permission);
+                      }
+                    }).length
                   }{" "}
                   funciones disponibles
                 </span>

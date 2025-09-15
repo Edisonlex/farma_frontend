@@ -8,7 +8,8 @@ import { PageHeader } from "../shared/page-header";
 import { BriefcaseMedical } from "lucide-react";
 import { ActionsBar } from "./actions-bar";
 import { MedicationsContent } from "./medications-content";
-import { Medication, useInventory } from "@/context/inventory-context"; // Importar el contexto
+import { useInventory } from "@/context/inventory-context"; // Importar el contexto
+import { Medication } from ".";
 
 export function MedicationsPage() {
   const { user } = useAuth();
