@@ -1,0 +1,137 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
+ // Cambiar esta importación
+import { hasPermission } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Pill,
+  ShoppingCart,
+  Package,
+  TrendingUp,
+  FileText,
+  Users,
+} from "lucide-react";
+
+import { Alert } from "@/lib/mock-data";
+import { DesktopNavigation } from "./DesktopNavigation";
+import { UserControls } from "./UserControls";
+import { MobileMenu } from "./MobileMenu";
+import { NotificationsDialog } from "./NotificationsDialog";
+import { useAlerts } from "@/context/AlertsContext";
+
+export function MainNav() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Usar el contexto de alertas
+  const { alerts, unresolvedAlerts, resolveAlert, resolveAllAlerts } =
+    useAlerts();
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/");
+  };
+
+  const handleAlertClick = (alert: Alert) => {
+    // Marcar la alerta específica como resuelta usando el contexto
+    resolveAlert(alert.id);
+
+    // Navegar según el tipo de alerta
+    switch (alert.type) {
+      case "stock_bajo":
+        router.push("/medicamentos?alertas=true");
+        break;
+      case "vencimiento":
+      case "vencido":
+        router.push("/medicamentos?vencimientos=true");
+        break;
+      default:
+        router.push("/medicamentos");
+        break;
+    }
+
+    setIsNotificationsOpen(false);
+  };
+
+  const navigationItems = [
+    { href: "/ventas", icon: ShoppingCart, label: "Ventas" },
+    { href: "/medicamentos", icon: Package, label: "Medicamentos" },
+    { href: "/analytics", icon: TrendingUp, label: "Análisis" },
+    { href: "/reportes", icon: FileText, label: "Reportes" },
+    { href: "/clientes", icon: Users, label: "Clientes" },
+    ...(user && user.role && hasPermission(user.role, "manage_users")
+      ? [{ href: "/usuarios", icon: Users, label: "Usuarios" }]
+      : []),
+  ];
+
+  return (
+    <header className="border-b bg-card sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between md:flex-nowrap flex-wrap gap-2">
+          {/* Logo y Título */}
+          <Link href="/" className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Pill className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold">PharmaCare</h1>
+              <p className="text-sm text-muted-foreground">
+                Sistema de Inventario
+              </p>
+            </div>
+            <div className="sm:hidden">
+              <h1 className="text-lg font-bold">PharmaCare</h1>
+            </div>
+          </Link>
+
+          {/* Navegación Desktop */}
+          <DesktopNavigation navigationItems={navigationItems} />
+
+          {/* Controles de Usuario */}
+          <UserControls
+            user={user}
+            unreadAlerts={unresolvedAlerts}
+            onLogout={handleLogout}
+            onToggleMobileMenu={toggleMobileMenu}
+            isMobileMenuOpen={isMobileMenuOpen}
+            setIsNotificationsOpen={setIsNotificationsOpen}
+          />
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        user={user}
+        navigationItems={navigationItems}
+        onClose={closeMobileMenu}
+        onLogout={handleLogout}
+      />
+
+      {/* Notifications Dialog */}
+      <NotificationsDialog
+        isOpen={isNotificationsOpen}
+        setIsOpen={setIsNotificationsOpen}
+        alerts={unresolvedAlerts}
+        unreadAlerts={unresolvedAlerts}
+        onMarkAllAsRead={resolveAllAlerts}
+        onAlertClick={handleAlertClick}
+      />
+    </header>
+  );
+}
