@@ -161,6 +161,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       generated.push(...demos);
     }
 
+    generated.sort((a, b) => b.date.getTime() - a.date.getTime());
     setAlerts(generated);
   }, [medications, movements, notificationConfig.expiryDays, notificationConfig.criticalExpiryDays, user?.role]);
 
