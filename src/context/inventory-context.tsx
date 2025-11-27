@@ -1,10 +1,12 @@
 // contexts/inventory-context.tsx
 "use client";
 
-import { Category, Supplier } from "@/components/medications";
+import type { Category, Supplier } from "@/lib/mock-data";
 import {
   mockMedications,
   mockMovements,
+  mockSuppliers,
+  mockCategories,
   type Medication,
   type InventoryMovement,
 } from "@/lib/mock-data";
@@ -20,7 +22,6 @@ import {
   SupplierCreateSchema,
   SupplierSchema,
 } from "@/lib/schemas";
-
 
 interface InventoryContextType {
   medications: Medication[];
@@ -60,50 +61,14 @@ const InventoryContext = createContext<InventoryContextType | undefined>(
   undefined
 );
 
-// Datos iniciales para categorías y proveedores
-const initialCategories: Category[] = [
-  { id: "1", name: "Analgésicos", description: "Medicamentos para el dolor" },
-  {
-    id: "2",
-    name: "Antiinflamatorios",
-    description: "Medicamentos antiinflamatorios",
-  },
-  {
-    id: "3",
-    name: "Antibióticos",
-    description: "Medicamentos antibacterianos",
-  },
-  { id: "4", name: "Gastroprotectores", description: "Protectores gástricos" },
-  { id: "5", name: "Antihistamínicos", description: "Para alergias" },
-];
-
-const initialSuppliers: Supplier[] = [
-  {
-    id: "1",
-    name: "Laboratorios ABC",
-    contact: "Juan Pérez",
-    phone: "123-456-7890",
-    email: "juan@abc.com",
-  },
-  {
-    id: "2",
-    name: "Farmacéutica XYZ",
-    contact: "María García",
-    phone: "098-765-4321",
-    email: "maria@xyz.com",
-  },
-  {
-    id: "3",
-    name: "Laboratorios DEF",
-    contact: "Carlos López",
-    phone: "555-123-4567",
-    email: "carlos@def.com",
-  },
-];
+// Datos iniciales centralizados desde mock-data
+const initialCategories: Category[] = mockCategories;
+const initialSuppliers: Supplier[] = mockSuppliers;
 
 export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const [medications, setMedications] = useState<Medication[]>(mockMedications);
-  const [movements, setMovements] = useState<InventoryMovement[]>(mockMovements);
+  const [movements, setMovements] =
+    useState<InventoryMovement[]>(mockMovements);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const { user } = useAuth();

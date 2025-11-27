@@ -1,44 +1,82 @@
 export interface Medication {
-  id: string
-  name: string
-  batch: string
-  expiryDate: Date
-  quantity: number
-  minStock: number
-  supplier: string
-  category: string
-  activeIngredient: string
-  price: number
-  location: string
+  id: string;
+  name: string;
+  batch: string;
+  expiryDate: Date;
+  quantity: number;
+  minStock: number;
+  supplier: string;
+  category: string;
+  activeIngredient: string;
+  price: number;
+  location: string;
 }
 
 export interface InventoryMovement {
-  id: string
-  medicationId: string
-  medicationName: string
-  type: "entrada" | "salida" | "ajuste"
-  quantity: number
-  date: Date
-  reason: string
-  userId: string
-  userName: string
+  id: string;
+  medicationId: string;
+  medicationName: string;
+  type: "entrada" | "salida" | "ajuste";
+  quantity: number;
+  date: Date;
+  reason: string;
+  userId: string;
+  userName: string;
 }
 
 export interface Alert {
-  id: string
-  type: "stock_bajo" | "vencimiento" | "vencido" | "tendencia_ventas"
-  medicationId: string
-  medicationName: string
-  message: string
-  severity: "low" | "medium" | "high"
-  date: Date
-  resolved: boolean
+  id: string;
+  type: "stock_bajo" | "vencimiento" | "vencido" | "tendencia_ventas";
+  medicationId: string;
+  medicationName: string;
+  message: string;
+  severity: "low" | "medium" | "high";
+  date: Date;
+  resolved: boolean;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  document: string;
+  type: "particular" | "empresa" | "institucion";
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  birthDate?: Date;
+  notes?: string;
+  isActive: boolean;
+  createdAt: Date;
+  lastPurchase?: Date | null;
+  totalPurchases: number;
+  totalAmount: number;
+  companyName?: string;
+  taxId?: string;
+  contactPerson?: string;
+  website?: string;
 }
 
 export const roleDemoAlerts: {
-  administrador: Alert[]
-  farmaceutico: Alert[]
-  tecnico: Alert[]
+  administrador: Alert[];
+  farmaceutico: Alert[];
+  tecnico: Alert[];
 } = {
   administrador: [
     {
@@ -108,7 +146,7 @@ export const roleDemoAlerts: {
       type: "tendencia_ventas",
       medicationId: "1",
       medicationName: "Paracetamol 500mg",
-      message: "Alta rotación, considerar reposición", 
+      message: "Alta rotación, considerar reposición",
       severity: "low",
       date: new Date(),
       resolved: false,
@@ -166,32 +204,47 @@ export const roleDemoAlerts: {
       resolved: false,
     },
   ],
-}
+};
 
-export interface Client {
-  id: string
-  name: string
-  email: string
-  phone: string
-  document: string
-  type: "particular" | "empresa" | "institucion"
-  address?: string
-  city?: string
-  state?: string
-  zipCode?: string
-  birthDate?: Date
-  notes?: string
-  isActive: boolean
-  createdAt: Date
-  lastPurchase?: Date
-  totalPurchases: number
-  totalAmount: number
-  // Campos específicos para empresas/instituciones
-  companyName?: string
-  taxId?: string
-  contactPerson?: string
-  website?: string
-}
+export const mockSuppliers: Supplier[] = [
+  {
+    id: "1",
+    name: "Laboratorios ABC",
+    contact: "Juan Pérez",
+    phone: "123-456-7890",
+    email: "juan@abc.com",
+  },
+  {
+    id: "2",
+    name: "Farmacéutica XYZ",
+    contact: "María García",
+    phone: "098-765-4321",
+    email: "maria@xyz.com",
+  },
+  {
+    id: "3",
+    name: "Laboratorios DEF",
+    contact: "Carlos López",
+    phone: "555-123-4567",
+    email: "carlos@def.com",
+  },
+];
+
+export const mockCategories: Category[] = [
+  { id: "1", name: "Analgésicos", description: "Medicamentos para el dolor" },
+  {
+    id: "2",
+    name: "Antiinflamatorios",
+    description: "Medicamentos antiinflamatorios",
+  },
+  {
+    id: "3",
+    name: "Antibióticos",
+    description: "Medicamentos antibacterianos",
+  },
+  { id: "4", name: "Gastroprotectores", description: "Protectores gástricos" },
+  { id: "5", name: "Antihistamínicos", description: "Para alergias" },
+];
 
 // Mock medications data
 export const mockMedications: Medication[] = [
@@ -202,8 +255,8 @@ export const mockMedications: Medication[] = [
     expiryDate: new Date("2025-06-15"),
     quantity: 150,
     minStock: 50,
-    supplier: "Laboratorios ABC",
-    category: "Analgésicos",
+    supplier: "3",
+    category: "1",
     activeIngredient: "Paracetamol",
     price: 2.5,
     location: "A1-B2",
@@ -215,8 +268,8 @@ export const mockMedications: Medication[] = [
     expiryDate: new Date("2024-12-30"),
     quantity: 8,
     minStock: 30,
-    supplier: "Farmacéutica XYZ",
-    category: "Antiinflamatorios",
+    supplier: "1",
+    category: "2",
     activeIngredient: "Ibuprofeno",
     price: 3.75,
     location: "A2-C1",
@@ -228,8 +281,8 @@ export const mockMedications: Medication[] = [
     expiryDate: new Date("2024-11-20"),
     quantity: 80,
     minStock: 40,
-    supplier: "Laboratorios DEF",
-    category: "Antibióticos",
+    supplier: "2",
+    category: "3",
     activeIngredient: "Amoxicilina",
     price: 5.2,
     location: "B1-A3",
@@ -241,8 +294,8 @@ export const mockMedications: Medication[] = [
     expiryDate: new Date("2025-03-10"),
     quantity: 200,
     minStock: 60,
-    supplier: "Laboratorios ABC",
-    category: "Gastroprotectores",
+    supplier: "2",
+    category: "4",
     activeIngredient: "Omeprazol",
     price: 4.1,
     location: "C1-B1",
@@ -254,22 +307,22 @@ export const mockMedications: Medication[] = [
     expiryDate: new Date("2024-10-05"),
     quantity: 5,
     minStock: 25,
-    supplier: "Farmacéutica GHI",
-    category: "Antihistamínicos",
+    supplier: "2",
+    category: "5",
     activeIngredient: "Loratadina",
     price: 1.8,
     location: "D1-A2",
   },
   {
     id: "6",
-    name: "Loratadina 10mgg",
+    name: "Cetirizina 10mg",
     batch: "LOR005",
     expiryDate: new Date("2024-10-05"),
     quantity: 15,
     minStock: 25,
-    supplier: "Farmacéutica GHI",
-    category: "Antihistamínicos",
-    activeIngredient: "Loratadina",
+    supplier: "2",
+    category: "5",
+    activeIngredient: "Cetirizina",
     price: 1.8,
     location: "D1-A2",
   },
@@ -307,7 +360,7 @@ export const mockAlerts: Alert[] = [
     date: new Date(),
     resolved: false,
   },
-]
+];
 
 // Mock inventory movements
 export const mockMovements: InventoryMovement[] = [
@@ -501,7 +554,7 @@ export const mockMovements: InventoryMovement[] = [
   {
     id: "1012",
     medicationId: "6",
-    medicationName: "Loratadina 10mgg",
+    medicationName: "Cetirizina 10mg",
     type: "salida",
     quantity: 9,
     date: new Date("2025-08-28"),
@@ -641,18 +694,27 @@ export const mockMovements: InventoryMovement[] = [
     userId: "2",
     userName: "Carlos Rodríguez",
   },
-]
+];
 
 // Analytics data
 export const getInventoryAnalytics = () => {
-  const totalMedications = mockMedications.length
-  const totalValue = mockMedications.reduce((sum, med) => sum + med.quantity * med.price, 0)
-  const lowStockCount = mockMedications.filter((med) => med.quantity <= med.minStock).length
+  const totalMedications = mockMedications.length;
+  const totalValue = mockMedications.reduce(
+    (sum, med) => sum + med.quantity * med.price,
+    0
+  );
+  const lowStockCount = mockMedications.filter(
+    (med) => med.quantity <= med.minStock
+  ).length;
   const expiringCount = mockMedications.filter((med) => {
-    const daysToExpiry = Math.ceil((med.expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    return daysToExpiry <= 30 && daysToExpiry > 0
-  }).length
-  const expiredCount = mockMedications.filter((med) => med.expiryDate < new Date()).length
+    const daysToExpiry = Math.ceil(
+      (med.expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysToExpiry <= 30 && daysToExpiry > 0;
+  }).length;
+  const expiredCount = mockMedications.filter(
+    (med) => med.expiryDate < new Date()
+  ).length;
 
   return {
     totalMedications,
@@ -661,46 +723,46 @@ export const getInventoryAnalytics = () => {
     expiringCount,
     expiredCount,
     totalAlerts: mockAlerts.filter((alert) => !alert.resolved).length,
-  }
-}
+  };
+};
 
 // Chart data
 export const getChartData = () => {
-  const categoryData = mockMedications.reduce(
-    (acc, med) => {
-      acc[med.category] = (acc[med.category] || 0) + med.quantity
-      return acc
-    },
-    {} as Record<string, number>,
-  )
+  const categoryData = mockMedications.reduce((acc, med) => {
+    acc[med.category] = (acc[med.category] || 0) + med.quantity;
+    return acc;
+  }, {} as Record<string, number>);
 
   const monthlyMovements = Array.from({ length: 6 }, (_, i) => {
-    const date = new Date()
-    date.setMonth(date.getMonth() - i)
-    const month = date.toLocaleDateString("es-ES", { month: "short" })
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    const month = date.toLocaleDateString("es-ES", { month: "short" });
 
     return {
       month,
       entradas: Math.floor(Math.random() * 200) + 100,
       salidas: Math.floor(Math.random() * 150) + 80,
       stock: Math.floor(Math.random() * 300) + 200,
-    }
-  }).reverse()
+    };
+  }).reverse();
 
   return {
-    categoryData: Object.entries(categoryData).map(([name, value]) => ({ name, value })),
+    categoryData: Object.entries(categoryData).map(([name, value]) => ({
+      name,
+      value,
+    })),
     monthlyMovements,
-  }
-}
+  };
+};
 
 // Mock clients data
 export const mockClients: Client[] = [
   {
     id: "1",
-    name: "Juan Carlos Pérezzzzz",
+    name: "Juan Carlos Pérez",
     email: "juan.perez@email.com",
-    phone: "+57 300 123 4567",
-    document: "12345678",
+    phone: "0981993918",
+    document: "0912345678",
     type: "particular",
     address: "Calle 123 #45-67",
     city: "Bogotá",
@@ -718,8 +780,8 @@ export const mockClients: Client[] = [
     id: "2",
     name: "María Elena Rodríguez",
     email: "maria.rodriguez@email.com",
-    phone: "+57 310 987 6543",
-    document: "87654321",
+    phone: "0998765432",
+    document: "0923456789",
     type: "particular",
     address: "Carrera 50 #30-20",
     city: "Medellín",
@@ -737,11 +799,11 @@ export const mockClients: Client[] = [
     id: "3",
     name: "Carlos Andrés López",
     email: "carlos.lopez@empresa.com",
-    phone: "+57 320 555 1234",
-    document: "11223344",
+    phone: "022345678",
+    document: "1790012345001",
     type: "empresa",
     companyName: "Empresa Salud Total S.A.S",
-    taxId: "900123456-1",
+    taxId: "1790012345001",
     contactPerson: "Carlos Andrés López",
     website: "https://www.saludtotal.com",
     address: "Avenida 68 #45-30",
@@ -759,8 +821,8 @@ export const mockClients: Client[] = [
     id: "4",
     name: "Ana Sofía Martínez",
     email: "ana.martinez@email.com",
-    phone: "+57 315 444 7890",
-    document: "55667788",
+    phone: "0961234567",
+    document: "0956677881",
     type: "particular",
     address: "Calle 85 #15-25",
     city: "Cali",
@@ -778,11 +840,11 @@ export const mockClients: Client[] = [
     id: "5",
     name: "Dr. Roberto Silva",
     email: "contacto@clinicavida.com",
-    phone: "+57 301 222 3333",
-    document: "99887766",
+    phone: "023456789",
+    document: "2099887766001",
     type: "institucion",
     companyName: "Clínica Vida y Salud",
-    taxId: "800987654-2",
+    taxId: "2099887766001",
     contactPerson: "Dr. Roberto Silva",
     website: "https://www.clinicavida.com",
     address: "Carrera 15 #80-45",
@@ -800,8 +862,8 @@ export const mockClients: Client[] = [
     id: "6",
     name: "Lucía Fernández",
     email: "lucia.fernandez@email.com",
-    phone: "+57 318 666 9999",
-    document: "33445566",
+    phone: "0951234567",
+    document: "0933445566",
     type: "particular",
     address: "Calle 72 #11-35",
     city: "Bucaramanga",
@@ -815,4 +877,4 @@ export const mockClients: Client[] = [
     totalPurchases: 42,
     totalAmount: 890000,
   },
-]
+];

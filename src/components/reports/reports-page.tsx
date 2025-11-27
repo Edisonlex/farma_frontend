@@ -14,7 +14,6 @@ import { Download, Package, BarChart3, FileText } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
-import { mockMedications } from "@/lib/mock-data";
 import { ReportData, ReportHistoryItem } from "./report/types";
 import { generateReportData } from "@/utils/report-generator";
 import { generateExcel, generatePDF } from "@/utils/file-exporter";
@@ -233,12 +232,10 @@ export function ReportsPage() {
 
   // Obtener categorías únicas de los medicamentos
   const categories = Array.from(
-    new Set(mockMedications.map((med) => med.category))
+    new Set(medications.map((med) => med.category))
   );
   // Obtener proveedores únicos de los medicamentos
-  const suppliers = Array.from(
-    new Set(mockMedications.map((med) => med.supplier))
-  );
+  const suppliers = Array.from(new Set(medications.map((med) => med.supplier)));
 
   return (
     <div className="min-h-screen bg-background">

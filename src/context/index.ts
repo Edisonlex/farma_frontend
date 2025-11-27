@@ -13,8 +13,8 @@ export type {
   UserConfig,
   SystemConfig,
   BackupConfig,
-  ConfigurationState
+  ConfigurationState,
 } from "./configuration-context";
 
-export type { Medication } from "./inventory-context";
+export type { Medication } from "@/lib/mock-data";
 export type { CartItem, Customer, Sale } from "./sales-context";

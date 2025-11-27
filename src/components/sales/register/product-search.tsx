@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, Pill } from "lucide-react";
 import { motion } from "framer-motion";
-import { mockMedications } from "@/lib/mock-data";
+import { useInventory } from "@/context/inventory-context";
 import { CartItem } from "@/context/sales-context";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,8 +24,9 @@ export function ProductSearch({
   setCart,
 }: ProductSearchProps) {
   const { toast } = useToast();
+  const { medications } = useInventory();
 
-  const filteredMedications = mockMedications.filter(
+  const filteredMedications = medications.filter(
     (med) =>
       med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       med.activeIngredient.toLowerCase().includes(searchTerm.toLowerCase())

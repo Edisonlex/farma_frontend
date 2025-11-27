@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Card,
@@ -29,11 +29,12 @@ import { AlertsList } from "./alerts-list";
 import { AlertsFilters } from "./alerts-filters";
 import { AlertsSettings } from "./alerts-settings";
 import { AlertsStats } from "./alerts-stats";
-import { mockAlerts, roleDemoAlerts, type Alert } from "@/lib/mock-data";
+import type { Alert } from "@/lib/mock-data";
+import { useAlerts } from "@/context/AlertsContext";
 
 export function AlertsPage() {
   const { user, logout } = useAuth();
-  const [alerts, setAlerts] = useState<Alert[]>(mockAlerts);
+  const { alerts, unresolvedAlerts, resolveAlert, resolveAllAlerts, unresolveAlert } = useAlerts();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
@@ -42,16 +43,7 @@ export function AlertsPage() {
 
   const canManage = user && hasPermission(user.role, "manage_alerts");
 
-  useEffect(() => {
-    if (!user?.role) return;
-    const demos = roleDemoAlerts[user.role] || [];
-    if (!demos.length) return;
-    setAlerts((prev) => {
-      const baseIds = new Set(prev.map((a) => a.id));
-      const toAdd = demos.filter((d) => !baseIds.has(d.id));
-      return toAdd.length ? [...toAdd, ...prev] : prev;
-    });
-  }, [user?.role]);
+  
 
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch =
@@ -67,30 +59,18 @@ export function AlertsPage() {
   });
 
   const handleResolveAlert = (id: string) => {
-    setAlerts((prev) =>
-      prev.map((alert) =>
-        alert.id === id ? { ...alert, resolved: true } : alert
-      )
-    );
+    resolveAlert(id);
   };
 
   const handleUnresolveAlert = (id: string) => {
-    setAlerts((prev) =>
-      prev.map((alert) =>
-        alert.id === id ? { ...alert, resolved: false } : alert
-      )
-    );
+    unresolveAlert(id);
   };
 
-  const handleBulkResolve = (ids: string[]) => {
-    setAlerts((prev) =>
-      prev.map((alert) =>
-        ids.includes(alert.id) ? { ...alert, resolved: true } : alert
-      )
-    );
+  const handleBulkResolve = () => {
+    resolveAllAlerts();
   };
 
-  const activeAlerts = alerts.filter((alert) => !alert.resolved);
+  const activeAlerts = unresolvedAlerts;
   const resolvedAlerts = alerts.filter((alert) => alert.resolved);
 
   return (
@@ -181,9 +161,7 @@ export function AlertsPage() {
 
               {canManage && activeAlerts.length > 0 && (
                 <Button
-                  onClick={() =>
-                    handleBulkResolve(activeAlerts.map((a) => a.id))
-                  }
+                  onClick={() => handleBulkResolve()}
                   className="flex items-center gap-2"
                 >
                   <CheckCircle className="w-4 h-4" />

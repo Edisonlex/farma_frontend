@@ -44,15 +44,15 @@ export function FiltersSection({
   totalCount,
   onClearFilters,
 }: FiltersSectionProps) {
-  const { medications } = useInventory();
+  const { medications, getCategoryName } = useInventory();
 
   const categories = useMemo(() => {
     const uniqueCategories = new Set(medications.map((med) => med.category));
     return Array.from(uniqueCategories).sort();
   }, [medications]);
 
-  const formatCategoryName = (category: string) => {
-    return category.charAt(0).toUpperCase() + category.slice(1);
+  const formatCategoryName = (categoryId: string) => {
+    return getCategoryName(categoryId);
   };
 
   return (
