@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react"
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredPermission?: string
+  requiredPermission?: string | string[]
 }
 
 export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
@@ -27,7 +27,12 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
     return <LoginForm />
   }
 
-  if (requiredPermission && user && !hasPermission(user.role, requiredPermission)) {
+  if (requiredPermission && user) {
+    const required = Array.isArray(requiredPermission)
+      ? requiredPermission
+      : [requiredPermission]
+    const ok = required.some((perm) => hasPermission(user.role, perm))
+    if (!ok) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -36,6 +41,7 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
         </div>
       </div>
     )
+    }
   }
 
   return <>{children}</>

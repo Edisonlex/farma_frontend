@@ -87,7 +87,6 @@ export const rolePermissions = {
   tecnico: [
     "view_dashboard",
     "view_medications",
-    "view_inventory",
     "view_transaction_history",
     "view_alerts",
     "process_sales",

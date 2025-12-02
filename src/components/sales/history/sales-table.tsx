@@ -42,7 +42,8 @@ export function SalesTable({
 
   return (
     <div className="border border-border/30 rounded-lg overflow-hidden">
-      <Table>
+      <div className="w-full overflow-x-auto">
+        <Table>
         <TableHeader className="bg-muted/30">
           <TableRow>
             <TableHead className="font-semibold text-foreground">
@@ -140,7 +141,8 @@ export function SalesTable({
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
     </div>
   );
 }

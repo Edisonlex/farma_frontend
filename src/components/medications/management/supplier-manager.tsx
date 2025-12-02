@@ -170,43 +170,45 @@ export function SupplierManager() {
         </Dialog>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Contacto</TableHead>
-            <TableHead>Teléfono</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {suppliers.map((supplier) => (
-            <TableRow key={supplier.id}>
-              <TableCell className="font-medium">{supplier.name}</TableCell>
-              <TableCell>{supplier.contact || "-"}</TableCell>
-              <TableCell>{supplier.phone || "-"}</TableCell>
-              <TableCell>{supplier.email || "-"}</TableCell>
-              <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleEdit(supplier)}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(supplier.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </TableCell>
+      <div className="w-full overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Contacto</TableHead>
+              <TableHead>Teléfono</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {suppliers.map((supplier) => (
+              <TableRow key={supplier.id}>
+                <TableCell className="font-medium">{supplier.name}</TableCell>
+                <TableCell>{supplier.contact || "-"}</TableCell>
+                <TableCell>{supplier.phone || "-"}</TableCell>
+                <TableCell>{supplier.email || "-"}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEdit(supplier)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(supplier.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

@@ -183,7 +183,8 @@ export function PredictionsTableDesktop({
 
       {/* Predictions Table */}
       <div className="rounded-lg border overflow-hidden">
-        <Table>
+        <div className="w-full overflow-x-auto">
+          <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
               <SortHeader column="name">Medicamento</SortHeader>
@@ -293,7 +294,8 @@ export function PredictionsTableDesktop({
               </motion.tr>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       </div>
 
       {/* Summary */}

@@ -69,15 +69,21 @@ export function MainNav() {
   };
 
   const navigationItems = [
-    { href: "/ventas", icon: ShoppingCart, label: "Ventas" },
-    { href: "/medicamentos", icon: Package, label: "Medicamentos" },
-    { href: "/analytics", icon: TrendingUp, label: "Análisis" },
-    { href: "/reportes", icon: FileText, label: "Reportes" },
-    { href: "/clientes", icon: Users, label: "Clientes" },
+    { href: "/ventas", icon: ShoppingCart, label: "Ventas", permission: ["manage_sales", "process_sales"] },
+    { href: "/medicamentos", icon: Package, label: "Medicamentos", permission: ["manage_medications", "view_medications"] },
+    { href: "/analytics", icon: TrendingUp, label: "Análisis", permission: "view_analytics" },
+    { href: "/reportes", icon: FileText, label: "Reportes", permission: "generate_reports" },
+    { href: "/clientes", icon: Users, label: "Clientes", permission: ["manage_clients", "view_clients"] },
     ...(user && user.role && hasPermission(user.role, "manage_users")
-      ? [{ href: "/usuarios", icon: Users, label: "Usuarios" }]
+      ? [{ href: "/usuarios", icon: Users, label: "Usuarios", permission: "manage_users" }]
       : []),
-  ];
+  ].filter((item) => {
+    if (!item.permission) return true;
+    if (!user || !user.role) return false;
+    return Array.isArray(item.permission)
+      ? item.permission.some((perm) => hasPermission(user.role, perm))
+      : hasPermission(user.role, item.permission);
+  });
 
   return (
     <header className="border-b bg-card sticky top-0 z-50">
