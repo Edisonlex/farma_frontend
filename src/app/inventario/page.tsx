@@ -5,7 +5,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 
 export default function InventarioPage() {
   return (
-    <ProtectedRoute requiredPermission="manage_inventory">
+    <ProtectedRoute requiredPermission={["manage_inventory", "view_inventory"]}>
       <InventoryPage />
     </ProtectedRoute>
   );

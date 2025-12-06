@@ -36,13 +36,12 @@ interface InventoryChartProps {
   data: ChartData;
 }
 
-// Colores específicos basados en la imagen proporcionada
-const CATEGORY_COLORS: Record<string, string> = {
-  Analgésicos: "#4F46E5", // Azul (índigo)
-  Antibióticos: "#10B981", // Verde esmeralda
-  Antihistamínicos: "#F59E0B", // Ámbar
-  Antiinflamatorios: "#EF4444", // Rojo
-  Gastroprotectores: "#8B5CF6", // Violeta
+const CATEGORY_COLOR_VARS: Record<string, string> = {
+  Analgésicos: "var(--chart-1)",
+  Antibióticos: "var(--chart-2)",
+  Antihistamínicos: "var(--chart-3)",
+  Antiinflamatorios: "var(--chart-4)",
+  Gastroprotectores: "var(--chart-5)",
 };
 
 // Orden específico para la leyenda
@@ -203,13 +202,13 @@ export function InventoryChart({ data }: InventoryChartProps) {
           <p className="font-medium mb-1">{label}</p>
           <p
             className="text-sm"
-            style={{ color: CATEGORY_COLORS["Analgésicos"] }}
+            style={{ color: "var(--chart-1)" }}
           >
             Entradas: <span className="font-medium">{payload[0].value}</span>
           </p>
           <p
             className="text-sm"
-            style={{ color: CATEGORY_COLORS["Antibióticos"] }}
+            style={{ color: "var(--chart-2)" }}
           >
             Salidas: <span className="font-medium">{payload[1].value}</span>
           </p>
@@ -226,17 +225,18 @@ export function InventoryChart({ data }: InventoryChartProps) {
     return (
       <div className="flex flex-col gap-2 ml-4">
         {payload.map((entry: any, index: number) => {
-          const { value, color } = entry;
-          const item = sortedCategoryData.find((item) => item.name === value);
+          const name = entry?.payload?.name ?? entry?.value;
+          const item = sortedCategoryData.find((i) => i.name === name);
+          const colorVar = CATEGORY_COLOR_VARS[name as keyof typeof CATEGORY_COLOR_VARS];
 
           return (
             <div key={`legend-${index}`} className="flex items-center gap-2">
               <div
                 className="w-4 h-4 rounded-sm"
-                style={{ backgroundColor: color }}
+                style={{ backgroundColor: colorVar }}
               />
               <span className="text-sm text-foreground">
-                {value} {item?.percentage}
+                {name} {item?.percentage}
               </span>
             </div>
           );
@@ -265,17 +265,17 @@ export function InventoryChart({ data }: InventoryChartProps) {
                   data={sortedCategoryData}
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
-                  innerRadius={60}
+                  outerRadius={100}
+                  innerRadius={70}
                   paddingAngle={2}
                   dataKey="value"
-                  label={false} // Eliminamos las etiquetas alrededor del círculo
+                  label={false}
                 >
                   {sortedCategoryData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={CATEGORY_COLORS[entry.name]}
-                      stroke="hsl(var(--border))"
+                      fill={CATEGORY_COLOR_VARS[entry.name]}
+                      stroke="var(--border)"
                       strokeWidth={1}
                     />
                   ))}
@@ -344,13 +344,13 @@ export function InventoryChart({ data }: InventoryChartProps) {
                 <Tooltip content={<CustomBarTooltip />} />
                 <Bar
                   dataKey="entradas"
-                  fill={CATEGORY_COLORS["Analgésicos"]}
+                  fill={"var(--chart-1)"}
                   radius={[4, 4, 0, 0]}
                   name="Entradas"
                 />
                 <Bar
                   dataKey="salidas"
-                  fill={CATEGORY_COLORS["Antibióticos"]}
+                  fill={"var(--chart-2)"}
                   radius={[4, 4, 0, 0]}
                   name="Salidas"
                 />
@@ -360,9 +360,7 @@ export function InventoryChart({ data }: InventoryChartProps) {
                       <div className="flex items-center gap-2">
                         <div
                           className="w-4 h-4 rounded-sm"
-                          style={{
-                            backgroundColor: CATEGORY_COLORS["Analgésicos"],
-                          }}
+                          style={{ backgroundColor: "var(--chart-1)" }}
                         />
                         <span className="text-sm text-foreground">
                           Entradas
@@ -371,9 +369,7 @@ export function InventoryChart({ data }: InventoryChartProps) {
                       <div className="flex items-center gap-2">
                         <div
                           className="w-4 h-4 rounded-sm"
-                          style={{
-                            backgroundColor: CATEGORY_COLORS["Antibióticos"],
-                          }}
+                          style={{ backgroundColor: "var(--chart-2)" }}
                         />
                         <span className="text-sm text-foreground">Salidas</span>
                       </div>

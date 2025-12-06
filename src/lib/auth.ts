@@ -73,24 +73,17 @@ export const rolePermissions = {
   ],
   farmaceutico: [
     "view_dashboard",
-    "manage_medications",
-    "manage_inventory",
+    "view_medications",
+    "view_inventory",
+    "adjust_inventory",
     "view_alerts",
-    "view_analytics",
-    "generate_reports",
-    "manage_sales",
+    "process_sales",
     "view_sales_reports",
     "view_transaction_history",
-    "manage_clients",
-    "view_clients",
   ],
   tecnico: [
     "view_dashboard",
-    "view_medications",
-    "view_transaction_history",
     "view_alerts",
-    "process_sales",
-    "view_clients",
   ],
 };
 

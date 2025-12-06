@@ -29,17 +29,7 @@ import Link from "next/link";
 export default function QuickActions() {
   const { user } = useAuth();
   const analytics = getInventoryAnalytics();
-
-  console.log("Usuario actual:", user);
-  console.log("Rol:", user?.role);
-  console.log(
-    "Tiene manage_sales:",
-    user && hasPermission(user.role, "manage_sales")
-  );
-  console.log(
-    "Tiene process_sales:",
-    user && hasPermission(user.role, "process_sales")
-  );
+  const role = user?.role;
 
   const quickActions = [
     {
@@ -48,7 +38,8 @@ export default function QuickActions() {
       icon: ShoppingCart,
       color: "bg-chart-5",
       gradient: "from-chart-5 to-chart-5/80",
-      permission: ["manage_sales", "process_sales"], // Múltiples permisos aceptados
+      permission: ["manage_sales", "process_sales"],
+      roles: ["administrador", "farmaceutico"],
       href: "/ventas",
     },
     {
@@ -58,6 +49,7 @@ export default function QuickActions() {
       color: "bg-primary",
       gradient: "from-primary to-primary/80",
       permission: "manage_medications",
+      roles: ["administrador", "farmaceutico"],
       href: "/medicamentos",
     },
     // {
@@ -76,6 +68,7 @@ export default function QuickActions() {
       color: "bg-accent",
       gradient: "from-accent to-accent/80",
       permission: "view_analytics",
+      roles: ["administrador"],
       href: "/analytics",
     },
     {
@@ -85,6 +78,7 @@ export default function QuickActions() {
       color: "bg-secondary",
       gradient: "from-secondary to-secondary/80",
       permission: "generate_reports",
+      roles: ["administrador"],
       href: "/reportes",
     },
     {
@@ -94,6 +88,7 @@ export default function QuickActions() {
       color: "bg-chart-3",
       gradient: "from-chart-3 to-chart-3/80",
       permission: "manage_users",
+      roles: ["administrador"],
       href: "/usuarios",
     },
     {
@@ -103,6 +98,7 @@ export default function QuickActions() {
       color: "bg-chart-2",
       gradient: "from-chart-2 to-chart-2/80",
       permission: "view_inventory",
+      roles: ["administrador", "farmaceutico"],
       href: "/inventario",
     },
     {
@@ -112,6 +108,7 @@ export default function QuickActions() {
       color: "bg-chart-4",
       gradient: "from-chart-4 to-chart-4/80",
       permission: "manage_categories",
+      roles: ["administrador"],
       href: "/categorias",
     },
     {
@@ -121,6 +118,7 @@ export default function QuickActions() {
       color: "bg-chart-6",
       gradient: "from-chart-6 to-chart-6/80",
       permission: "manage_suppliers",
+      roles: ["administrador"],
       href: "/proveedores",
     },
   ];
@@ -151,30 +149,18 @@ export default function QuickActions() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {quickActions.map((action, index) => {
-              // LÓGICA DE PERMISOS MEJORADA
               let canAccess = false;
-
-              if (!action.permission) {
-                canAccess = true;
-              } else if (user) {
-                if (Array.isArray(action.permission)) {
-                  canAccess = action.permission.some((perm) =>
-                    hasPermission(user.role, perm)
-                  );
+              if (role) {
+                if (action.roles && !action.roles.includes(role)) {
+                  canAccess = false;
+                } else if (!action.permission) {
+                  canAccess = true;
+                } else if (Array.isArray(action.permission)) {
+                  canAccess = action.permission.some((perm) => hasPermission(role, perm));
                 } else {
-                  canAccess = hasPermission(user.role, action.permission);
+                  canAccess = hasPermission(role, action.permission);
                 }
               }
-
-              // DEBUG: Verificar cada acción
-              console.log(
-                `Acción: ${
-                  action.title
-                }, Puede acceder: ${canAccess}, Permisos requeridos: ${JSON.stringify(
-                  action.permission
-                )}`
-              );
-
               if (!canAccess) return null;
 
               const IconComponent = action.icon;
@@ -233,17 +219,12 @@ export default function QuickActions() {
 
           {/* Footer con estadísticas */}
           {quickActions.some((action) => {
-            // Misma lógica de permisos para el contador
+            if (!role) return false;
+            if (action.roles && !action.roles.includes(role)) return false;
             if (!action.permission) return true;
-            if (!user) return false;
-
-            if (Array.isArray(action.permission)) {
-              return action.permission.some((perm) =>
-                hasPermission(user.role, perm)
-              );
-            } else {
-              return hasPermission(user.role, action.permission);
-            }
+            return Array.isArray(action.permission)
+              ? action.permission.some((perm) => hasPermission(role, perm))
+              : hasPermission(role, action.permission);
           }) && (
             <motion.div
               initial={{ opacity: 0 }}

@@ -33,6 +33,8 @@ function getAlertIcon(type: string) {
       return <Calendar className="w-4 h-4 text-orange-500" />;
     case "vencido":
       return <AlertCircle className="w-4 h-4 text-red-500" />;
+    case "tarea_tecnica":
+      return <AlertCircle className="w-4 h-4 text-blue-500" />;
     default:
       return <AlertCircle className="w-4 h-4 text-blue-500" />;
   }

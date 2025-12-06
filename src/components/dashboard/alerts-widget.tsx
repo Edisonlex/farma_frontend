@@ -34,6 +34,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { Alert } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/use-auth";
+import { hasPermission } from "@/lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface AlertsWidgetProps {
@@ -51,6 +53,10 @@ export function AlertsWidget({
   onResolveAlert,
   onNavigateToResolution,
 }: AlertsWidgetProps) {
+  const { user } = useAuth();
+  const canResolve = Boolean(
+    user && (hasPermission(user.role, "manage_inventory") || hasPermission(user.role, "manage_medications"))
+  );
   const [filter, setFilter] = useState<AlertFilter>("unresolved");
   const [typeFilter, setTypeFilter] = useState<AlertTypeFilter>("all");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
@@ -67,6 +73,8 @@ export function AlertsWidget({
         return Calendar;
       case "vencido":
         return AlertTriangle;
+      case "tarea_tecnica":
+        return Eye;
       default:
         return AlertTriangle;
     }
@@ -562,17 +570,19 @@ export function AlertsWidget({
                               <div className="flex gap-2 flex-wrap">
                                 {!alert.resolved && (
                                   <>
-                                    <Button
-                                      size="sm"
-                                      className="gap-2 bg-chart-5 hover:bg-chart-5/90"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        resolveAlert(alert.id);
-                                      }}
-                                    >
-                                      <CheckCircle2 className="w-4 h-4" />
-                                      Marcar como resuelta
-                                    </Button>
+                                    {canResolve && (
+                                      <Button
+                                        size="sm"
+                                        className="gap-2 bg-chart-5 hover:bg-chart-5/90"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          resolveAlert(alert.id);
+                                        }}
+                                      >
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Marcar como resuelta
+                                      </Button>
+                                    )}
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -583,7 +593,7 @@ export function AlertsWidget({
                                       }}
                                     >
                                       <ExternalLink className="w-4 h-4" />
-                                      Resolver
+                                      {canResolve ? "Resolver" : "Ver detalle"}
                                     </Button>
                                   </>
                                 )}

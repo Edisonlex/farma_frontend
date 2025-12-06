@@ -26,7 +26,7 @@ export interface InventoryMovement {
 
 export interface Alert {
   id: string;
-  type: "stock_bajo" | "vencimiento" | "vencido" | "tendencia_ventas";
+  type: "stock_bajo" | "vencimiento" | "vencido" | "tendencia_ventas" | "tarea_tecnica";
   medicationId: string;
   medicationName: string;
   message: string;
@@ -164,41 +164,31 @@ export const roleDemoAlerts: {
   ],
   tecnico: [
     {
-      id: "demo-tecnico-vencido",
-      type: "vencido",
+      id: "demo-tecnico-tarea-1",
+      type: "tarea_tecnica",
       medicationId: "5",
       medicationName: "Loratadina 10mg",
-      message: "Medicamento vencido detectado en estantería",
-      severity: "high",
+      message: "Realizar conteo físico y etiquetado en estantería",
+      severity: "medium",
       date: new Date(),
       resolved: false,
     },
     {
-      id: "demo-tecnico-stock-bajo",
-      type: "stock_bajo",
+      id: "demo-tecnico-tarea-2",
+      type: "tarea_tecnica",
       medicationId: "2",
       medicationName: "Ibuprofeno 400mg",
-      message: "Stock bajo, considerar reposición",
-      severity: "medium",
+      message: "Actualizar etiqueta y ubicación en anaquel",
+      severity: "low",
       date: new Date(),
       resolved: false,
     },
     {
-      id: "demo-tecnico-alarma-sensores",
-      type: "stock_bajo",
+      id: "demo-tecnico-tarea-3",
+      type: "tarea_tecnica",
       medicationId: "3",
       medicationName: "Amoxicilina 250mg",
-      message: "Lectura de estantería indica bajo stock",
-      severity: "medium",
-      date: new Date(),
-      resolved: false,
-    },
-    {
-      id: "demo-tecnico-vencimiento-proximo",
-      type: "vencimiento",
-      medicationId: "4",
-      medicationName: "Omeprazol 20mg",
-      message: "Vence en 5 días",
+      message: "Verificar lote y registrar datos faltantes",
       severity: "medium",
       date: new Date(),
       resolved: false,

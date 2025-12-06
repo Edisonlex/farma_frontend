@@ -5,7 +5,7 @@ import { MedicationsPage } from "@/components/medications/medications-page";
 
 export default function MedicamentosPage() {
   return (
-    <ProtectedRoute requiredPermission="manage_medications">
+    <ProtectedRoute requiredPermission={["manage_medications", "view_medications"]}>
       <MedicationsPage />
     </ProtectedRoute>
   );

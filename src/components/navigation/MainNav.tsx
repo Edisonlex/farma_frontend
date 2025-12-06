@@ -29,6 +29,7 @@ export function MainNav() {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const role = user?.role;
 
   // Usar el contexto de alertas
   const { alerts, unresolvedAlerts, resolveAlert, resolveAllAlerts } =
@@ -48,10 +49,14 @@ export function MainNav() {
   };
 
   const handleAlertClick = (alert: Alert) => {
-    // Marcar la alerta específica como resuelta usando el contexto
-    resolveAlert(alert.id);
+    const canResolve = user && (
+      hasPermission(user.role, "manage_inventory") ||
+      hasPermission(user.role, "manage_medications")
+    );
+    if (canResolve) {
+      resolveAlert(alert.id);
+    }
 
-    // Navegar según el tipo de alerta
     switch (alert.type) {
       case "stock_bajo":
         router.push("/medicamentos?alertas=true");
@@ -69,20 +74,21 @@ export function MainNav() {
   };
 
   const navigationItems = [
-    { href: "/ventas", icon: ShoppingCart, label: "Ventas", permission: ["manage_sales", "process_sales"] },
-    { href: "/medicamentos", icon: Package, label: "Medicamentos", permission: ["manage_medications", "view_medications"] },
-    { href: "/analytics", icon: TrendingUp, label: "Análisis", permission: "view_analytics" },
-    { href: "/reportes", icon: FileText, label: "Reportes", permission: "generate_reports" },
-    { href: "/clientes", icon: Users, label: "Clientes", permission: ["manage_clients", "view_clients"] },
+    { href: "/ventas", icon: ShoppingCart, label: "Ventas", permission: ["manage_sales", "process_sales"], roles: ["administrador", "farmaceutico"] },
+    { href: "/medicamentos", icon: Package, label: "Medicamentos", permission: ["manage_medications", "view_medications"], roles: ["administrador", "farmaceutico"] },
+    { href: "/analytics", icon: TrendingUp, label: "Análisis", permission: "view_analytics", roles: ["administrador"] },
+    { href: "/reportes", icon: FileText, label: "Reportes", permission: "generate_reports", roles: ["administrador"] },
+    { href: "/clientes", icon: Users, label: "Clientes", permission: ["manage_clients", "view_clients"], roles: ["administrador"] },
     ...(user && user.role && hasPermission(user.role, "manage_users")
-      ? [{ href: "/usuarios", icon: Users, label: "Usuarios", permission: "manage_users" }]
+      ? [{ href: "/usuarios", icon: Users, label: "Usuarios", permission: "manage_users", roles: ["administrador"] }]
       : []),
   ].filter((item) => {
     if (!item.permission) return true;
-    if (!user || !user.role) return false;
+    if (!role) return false;
+    if (item.roles && !item.roles.includes(role)) return false;
     return Array.isArray(item.permission)
-      ? item.permission.some((perm) => hasPermission(user.role, perm))
-      : hasPermission(user.role, item.permission);
+      ? item.permission.some((perm) => hasPermission(role, perm))
+      : hasPermission(role, item.permission);
   });
 
   return (

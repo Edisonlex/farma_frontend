@@ -156,13 +156,69 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       return medAlerts;
     });
 
+    // Añadir demos por rol
     if (user?.role) {
       const demos = roleDemoAlerts[user.role] || [];
       generated.push(...demos);
     }
 
-    generated.sort((a, b) => b.date.getTime() - a.date.getTime());
-    setAlerts(generated);
+    // Filtrar por tipos permitidos según rol ANTES de setAlerts
+    const role = user?.role;
+    const allowedByRole: Record<string, Array<Alert["type"]>> = {
+      administrador: ["stock_bajo", "vencimiento", "vencido", "tendencia_ventas"],
+      farmaceutico: ["stock_bajo", "vencimiento", "vencido"],
+      tecnico: ["tarea_tecnica"],
+    };
+    const allowed = role ? allowedByRole[role] ?? [] : undefined;
+    let finalAlerts = typeof allowed === "undefined"
+      ? generated
+      : generated.filter((a) => allowed.includes(a.type));
+
+    // Generar tareas técnicas inteligentes para el rol técnico
+    if (role === "tecnico") {
+      const windowDays = 30;
+      const sinceDate = new Date(now.getTime() - windowDays * 24 * 60 * 60 * 1000);
+
+      const noRecentMovements = medications.filter((med) => {
+        const medMov = movements.filter((m) => m.medicationId === med.id && m.date >= sinceDate);
+        return medMov.length === 0;
+      }).slice(0, 3);
+
+      const expiringSoon = medications
+        .filter((med) => {
+          const days = Math.ceil((med.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          return days > 0 && days <= (notificationConfig.expiryDays ?? 30);
+        })
+        .slice(0, 2);
+
+      const tasks: Alert[] = [
+        ...noRecentMovements.map((med) => ({
+          id: `${med.id}-tarea-conteo`,
+          type: "tarea_tecnica" as const,
+          medicationId: med.id,
+          medicationName: med.name,
+          message: "Realizar conteo físico y validar etiquetado",
+          severity: "low" as const,
+          date: now,
+          resolved: false,
+        })),
+        ...expiringSoon.map((med) => ({
+          id: `${med.id}-tarea-etiqueta-vencimiento`,
+          type: "tarea_tecnica" as const,
+          medicationId: med.id,
+          medicationName: med.name,
+          message: "Colocar etiqueta de 'próximo a vencer'",
+          severity: "medium" as const,
+          date: now,
+          resolved: false,
+        })),
+      ];
+
+      finalAlerts = [...tasks, ...finalAlerts];
+    }
+
+    finalAlerts.sort((a, b) => b.date.getTime() - a.date.getTime());
+    setAlerts(finalAlerts);
   }, [medications, movements, notificationConfig.expiryDays, notificationConfig.criticalExpiryDays, user?.role]);
 
   // Eliminar auto-resolución por tiempo: la resolución depende del estado real
@@ -179,8 +235,8 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
     const role = user?.role;
     if (!role) return true;
     if (role === "administrador") return true;
-    if (role === "farmaceutico") return a.type === "stock_bajo" || a.type === "vencimiento" || a.type === "tendencia_ventas";
-    if (role === "tecnico") return a.type === "stock_bajo" || a.type === "vencimiento" || a.type === "vencido";
+    if (role === "farmaceutico") return a.type === "stock_bajo" || a.type === "vencimiento" || a.type === "vencido";
+    if (role === "tecnico") return a.type === "tarea_tecnica";
     return true;
   };
 
