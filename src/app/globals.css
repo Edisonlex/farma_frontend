@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Paleta profesional para sistema de salud */
+  --background: oklch(0.99 0.01 250);
+  --foreground: oklch(0.20 0.03 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.03 260);
+  
+  --primary: oklch(0.55 0.15 255);           /* Azul institucional */
+  --primary-foreground: oklch(0.98 0.01 250);
+  
+  --secondary: oklch(0.97 0.02 250);
+  --secondary-foreground: oklch(0.55 0.15 255);
+  
+  --muted: oklch(0.96 0.01 250);
+  --muted-foreground: oklch(0.60 0.02 260);
+  
+  --accent: oklch(0.78 0.11 170);            /* Verde médico suave */
+  --accent-foreground: oklch(0.18 0.02 260);
+  
+  --destructive: oklch(0.65 0.20 25);
+  --destructive-foreground: oklch(0.98 0.01 250);
+  
+  --success: oklch(0.70 0.12 150);
+  --warning: oklch(0.75 0.15 80);
+  
+  --border: oklch(0.88 0.01 250);
+  --input: oklch(0.94 0.01 250);
+  --ring: oklch(0.55 0.15 255 / 0.5);
+  
+  --chart-1: oklch(0.55 0.15 255);
+  --chart-2: oklch(0.78 0.11 170);
+  --chart-3: oklch(0.70 0.15 40);
+  --chart-4: oklch(0.50 0.12 300);
+  --chart-5: oklch(0.72 0.14 120);
+  
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: oklch(0.18 0.02 250);        /* Fondo oscuro respirable */
+  --foreground: oklch(0.95 0.01 250);
+  --card: oklch(0.20 0.02 250);             /* Tarjeta con profundidad */
+  --card-foreground: oklch(0.92 0.01 250);
+  
+  --primary: oklch(0.65 0.15 255);           /* Azul más visible */
+  --primary-foreground: oklch(0.15 0.02 250);
+  
+  --secondary: oklch(0.24 0.02 250);
+  --secondary-foreground: oklch(0.92 0.01 250);
+  
+  --muted: oklch(0.24 0.02 250);
+  --muted-foreground: oklch(0.68 0.02 250);  /* Texto secundario legible */
+  
+  --accent: oklch(0.65 0.10 170);            /* Verde médico controlado */
+  --accent-foreground: oklch(0.15 0.02 250);
+  
+  --destructive: oklch(0.60 0.20 25);
+  --destructive-foreground: oklch(0.95 0.01 250);
+  
+  --success: oklch(0.65 0.12 150);
+  --warning: oklch(0.70 0.15 80);
+  
+  --border: oklch(0.32 0.02 250);           /* Borde visible */
+  --input: oklch(0.26 0.02 250);
+  --ring: oklch(0.65 0.15 255 / 0.5);
+  
+  --chart-1: oklch(0.65 0.15 255);
+  --chart-2: oklch(0.65 0.10 170);
+  --chart-3: oklch(0.68 0.15 40);
+  --chart-4: oklch(0.55 0.12 300);
+  --chart-5: oklch(0.72 0.14 120);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-none focus-visible:outline-ring/50;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Mejora en tarjetas */
+  .card {
+    @apply bg-card/90 backdrop-blur-sm border border-border/60 
+           rounded-lg shadow-sm hover:shadow-md 
+           transition-all duration-200;
+  }
+
+  /* Header con gradiente sutil */
+  .header-gradient {
+    @apply bg-gradient-to-r from-primary/5 via-accent/3 to-primary/5 
+           border-b border-border/50;
+  }
+
+  /* Botón actualizar */
+  .btn-refresh {
+    @apply inline-flex items-center gap-2 px-4 py-2 
+           bg-primary/10 text-primary hover:bg-primary/20 
+           rounded-md transition-all duration-200 
+           focus-visible:ring-2 focus-visible:ring-primary/50;
+  }
+
+  /* Iconos con mejor contraste */
+  .icon-brain { @apply text-primary; }
+  .icon-risk { @apply text-destructive; }
+  .icon-refresh { @apply text-muted-foreground hover:text-foreground; }
+  .icon-success { @apply text-success; }
+  .icon-warning { @apply text-warning; }
+}
