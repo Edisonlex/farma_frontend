@@ -274,20 +274,24 @@ export function ClientDialog({
                       <FormControl>
                         <Input
                           inputMode="numeric"
-                          maxLength={13}
+                          maxLength={form.watch("type") === "particular" ? 10 : 13}
                           placeholder={
                             form.watch("type") === "particular"
                               ? "Cédula 10 dígitos"
                               : "RUC 13 dígitos"
                           }
                           {...field}
-                          onChange={(e) =>
-                            field.onChange(formatEcDocument(e.target.value))
-                          }
+                          onChange={(e) => {
+                            // Restrict to numbers only
+                            const val = e.target.value.replace(/\D/g, "");
+                            field.onChange(formatEcDocument(val));
+                          }}
                         />
                       </FormControl>
                       <FormDescription>
-                        Ingresa cédula de 10 dígitos o RUC de 13 dígitos
+                        {form.watch("type") === "particular" 
+                          ? "Debe tener 10 dígitos numéricos" 
+                          : "Debe tener 13 dígitos numéricos"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -312,6 +316,7 @@ export function ClientDialog({
                               let y = s.slice(0, 4);
                               let m = s.slice(4, 6);
                               let d = s.slice(6, 8);
+                              // Auto-format logic...
                               const nowY = new Date().getFullYear();
                               if (y.length === 4) {
                                 let yi = parseInt(y, 10);
@@ -343,26 +348,6 @@ export function ClientDialog({
                           />
                         </FormControl>
                         <FormDescription>Formato AAAA-MM-DD</FormDescription>
-                        {(() => {
-                          const v = form.watch("birthDate") || "";
-                          const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
-                          if (m) {
-                            const yyyy = parseInt(m[1], 10);
-                            const mm = parseInt(m[2], 10);
-                            const dd = parseInt(m[3], 10);
-                            const d = new Date(yyyy, mm - 1, dd);
-                            const now = new Date();
-                            let age = now.getFullYear() - d.getFullYear();
-                            const hadBirthday =
-                              now.getMonth() > d.getMonth() ||
-                              (now.getMonth() === d.getMonth() && now.getDate() >= d.getDate());
-                            if (!hadBirthday) age -= 1;
-                            if (!isNaN(d.getTime()) && age < 18) {
-                              return <p className="text-xs text-destructive mt-1">Debe ser mayor de 18 años</p>;
-                            }
-                          }
-                          return null;
-                        })()}
                         <FormMessage />
                       </FormItem>
                     )}

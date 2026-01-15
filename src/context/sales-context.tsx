@@ -40,7 +40,7 @@ export interface Sale {
 
 interface SalesContextType {
   sales: Sale[];
-  addSale: (sale: Omit<Sale, "id" | "date" | "status">) => void;
+  addSale: (sale: Omit<Sale, "id" | "date" | "status">) => string | undefined;
   cancelSale: (saleId: string) => void;
   getDailySales: () => Sale[];
   getSalesTotal: (sales: Sale[]) => {
@@ -91,7 +91,8 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
           } as CartItem;
         });
         const subtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
-        const discount = i % 2 === 0 ? Math.round(subtotal * 0.05 * 100) / 100 : 0;
+        const discount =
+          i % 2 === 0 ? Math.round(subtotal * 0.05 * 100) / 100 : 0;
         const tax = Math.round(subtotal * 0.15 * 100) / 100;
         const total = Math.round((subtotal - discount + tax) * 100) / 100;
         const pm = i % 3 === 0 ? "cash" : i % 3 === 1 ? "card" : "transfer";
@@ -121,14 +122,56 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
 
   // Actualiza la función addSale para generar siempre comprobante
   const addSale = (saleData: Omit<Sale, "id" | "date" | "status">) => {
-    const v = SaleCreateSchema.safeParse(saleData);
+    // Intento de corrección automática de datos antes de validar
+    const cleanData = {
+      ...saleData,
+      customer: {
+        ...saleData.customer,
+        // Si el documento es string vacío, lo eliminamos para que pase la validación de "opcional"
+        document:
+          saleData.customer.document === ""
+            ? undefined
+            : saleData.customer.document,
+        email:
+          saleData.customer.email === "" ? undefined : saleData.customer.email,
+        address:
+          saleData.customer.address === ""
+            ? undefined
+            : saleData.customer.address,
+        name: saleData.customer.name || "Consumidor Final",
+      },
+      // Asegurar que items tenga los campos requeridos y numéricos
+      items: saleData.items.map((item) => ({
+        id: String(item.id),
+        name: String(item.name),
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        stock: Number(item.stock),
+        discount: item.discount ? Number(item.discount) : undefined,
+      })),
+    };
+
+    const v = SaleCreateSchema.safeParse(cleanData);
+
     if (!v.success) {
+      console.error(
+        "Error de validación en venta (issues):",
+        JSON.stringify(v.error.issues, null, 2)
+      );
+      console.error("Datos que fallaron:", JSON.stringify(cleanData, null, 2));
+
+      // Construir mensaje de error amigable
+      const errors = v.error.errors
+        .map((e) => `${e.path.join(".")}: ${e.message}`)
+        .join(", ");
       toast({
-        title: "Error de validación",
-        description: "Datos de venta inválidos",
+        title: "Error al registrar venta",
+        description: `Datos inválidos: ${errors.substring(0, 100)}...`,
+        variant: "destructive",
       });
       return;
     }
+
     const newSale: Sale = {
       ...v.data,
       id: `V-${String(sales.length + 1).padStart(3, "0")}`,
@@ -136,11 +179,20 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       status: "Completada",
     };
 
-    setSales((prev) => [...prev, newSale]);
+    setSales((prev) => {
+      const updated = [...prev, newSale];
+      // Guardado inmediato en localStorage para redundancia
+      try {
+        localStorage.setItem("pharmacy-sales", JSON.stringify(updated));
+      } catch (e) {
+        console.error("Error guardando en localStorage", e);
+      }
+      return updated;
+    });
 
-    // Generar comprobante PDF siempre, usando "Consumidor Final" si faltan datos
+    // Generar comprobante PDF siempre
     const customerInfo: Customer = {
-      name: saleData.customer?.name || "Consumidor Final",
+      name: newSale.customer.name || "Consumidor Final",
       document: saleData.customer?.document || "",
       email: saleData.customer?.email || "",
       address: saleData.customer?.address || "",

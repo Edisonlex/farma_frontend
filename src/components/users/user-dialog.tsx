@@ -185,7 +185,9 @@ export function UserDialog({
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>Mínimo 6 caracteres</FormDescription>
+                  <FormDescription>
+                     Debe tener al menos 6 caracteres. Recomendado: usar números y letras.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

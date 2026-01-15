@@ -280,10 +280,10 @@ export const UserConfigSchema = z.object({
 });
 
 export const SystemConfigSchema = z.object({
-  companyName: z.string(),
-  companyAddress: z.string(),
-  companyPhone: z.string(),
-  companyEmail: z.string().email().or(z.literal("")),
+  companyName: z.string().min(1, { message: "El nombre es requerido" }),
+  companyAddress: z.string().min(1, { message: "La dirección es requerida" }),
+  companyPhone: z.string().min(1, { message: "El teléfono es requerido" }),
+  companyEmail: z.string().email({ message: "Email inválido" }).or(z.literal("")),
   timezone: z.string(),
   language: z.string(),
   currency: z.string(),
@@ -293,6 +293,30 @@ export const SystemConfigSchema = z.object({
   autoBackup: z.boolean(),
   backupFrequency: z.string(),
   maxBackups: z.number().int().min(0),
+  
+  // UI fields
+  systemName: z.string().optional(),
+  systemVersion: z.string().optional(),
+  maintenanceMode: z.boolean().optional(),
+  debugMode: z.boolean().optional(),
+  dbConnectionTimeout: z.number().optional(),
+  dbMaxConnections: z.number().optional(),
+  dbBackupEnabled: z.boolean().optional(),
+  dbBackupFrequency: z.string().optional(),
+  dbRetentionDays: z.number().optional(),
+  cacheEnabled: z.boolean().optional(),
+  cacheTimeout: z.number().optional(),
+  maxFileUploadSize: z.number().optional(),
+  sessionCleanupInterval: z.number().optional(),
+  logLevel: z.string().optional(),
+  logRetentionDays: z.number().optional(),
+  enableErrorReporting: z.boolean().optional(),
+  enablePerformanceMonitoring: z.boolean().optional(),
+  apiTimeout: z.number().optional(),
+  maxRequestsPerMinute: z.number().optional(),
+  enableRateLimit: z.boolean().optional(),
+  corsEnabled: z.boolean().optional(),
+  defaultTimezone: z.string().optional(),
 });
 
 export const BackupConfigSchema = z.object({

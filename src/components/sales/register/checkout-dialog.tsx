@@ -156,7 +156,7 @@ export function CheckoutDialog({
                 </div>
               )}
               {paymentMethod === "cash" && (
-                <div className="p-4 border border-border/40 rounded-lg space-y-3">
+                <div className="p-4 border border-border rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total a cobrar</span>
                     <span className="text-lg font-semibold">${total.toFixed(2)}</span>
@@ -189,7 +189,7 @@ export function CheckoutDialog({
               )}
 
               {paymentMethod === "transfer" && (
-                <div className="p-4 border border-border/40 rounded-lg space-y-3">
+                <div className="p-4 border border-border rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total a transferir</span>
                     <span className="text-lg font-semibold">${total.toFixed(2)}</span>
@@ -216,7 +216,7 @@ export function CheckoutDialog({
               )}
 
               {paymentMethod === "card" && (
-                <div className="p-4 border border-border/40 rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-4 border border-border rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="sm:col-span-2">
                     <FormField
                       control={form.control}

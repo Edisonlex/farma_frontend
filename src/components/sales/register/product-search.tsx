@@ -142,7 +142,7 @@ export function ProductSearch({
               key={medication.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between p-4 border border-border/30 rounded-xl bg-background/50 hover:bg-accent/5 transition-colors group"
+              className="flex items-center justify-between p-4 border border-border rounded-xl bg-card hover:bg-accent/50 transition-all shadow-sm group"
             >
               <div className="flex-1">
                 <div className="flex items-start gap-3">

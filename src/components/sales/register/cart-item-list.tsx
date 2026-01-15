@@ -57,7 +57,7 @@ export function CartItemList({ cart, setCart }: CartItemListProps) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center gap-3 p-3 border border-border/30 rounded-lg bg-background/50"
+            className="flex items-center gap-3 p-3 border border-border rounded-lg bg-background/50 shadow-sm"
           >
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm text-foreground truncate">

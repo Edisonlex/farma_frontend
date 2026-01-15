@@ -229,7 +229,16 @@ export function SupplierDialog({
                   <FormItem>
                     <FormLabel>RUC *</FormLabel>
                     <FormControl>
-                      <Input inputMode="numeric" placeholder="RUC" {...field} />
+                      <Input
+                        inputMode="numeric"
+                        placeholder="RUC"
+                        maxLength={13}
+                        {...field}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          field.onChange(val);
+                        }}
+                      />
                     </FormControl>
                     <FormDescription>
                       13 dígitos, validación automática
@@ -249,7 +258,12 @@ export function SupplierDialog({
                       <Input
                         inputMode="numeric"
                         placeholder="Cédula"
+                        maxLength={10}
                         {...field}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          field.onChange(val);
+                        }}
                       />
                     </FormControl>
                     <FormDescription>

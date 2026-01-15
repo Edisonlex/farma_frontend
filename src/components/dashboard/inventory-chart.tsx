@@ -202,16 +202,10 @@ export function InventoryChart({ data }: InventoryChartProps) {
       return (
         <div className="bg-background border rounded-lg p-3 shadow-md">
           <p className="font-medium mb-1">{label}</p>
-          <p
-            className="text-sm"
-            style={{ color: "var(--chart-1)" }}
-          >
+          <p className="text-sm" style={{ color: "var(--chart-1)" }}>
             Entradas: <span className="font-medium">{payload[0].value}</span>
           </p>
-          <p
-            className="text-sm"
-            style={{ color: "var(--chart-2)" }}
-          >
+          <p className="text-sm" style={{ color: "var(--chart-2)" }}>
             Salidas: <span className="font-medium">{payload[1].value}</span>
           </p>
         </div>
@@ -229,7 +223,8 @@ export function InventoryChart({ data }: InventoryChartProps) {
         {payload.map((entry: any, index: number) => {
           const name = entry?.payload?.name ?? entry?.value;
           const item = sortedCategoryData.find((i) => i.name === name);
-          const colorVar = CATEGORY_COLOR_VARS[name as keyof typeof CATEGORY_COLOR_VARS];
+          const colorVar =
+            CATEGORY_COLOR_VARS[name as keyof typeof CATEGORY_COLOR_VARS];
 
           return (
             <div key={`legend-${index}`} className="flex items-center gap-2">
@@ -286,16 +281,16 @@ export function InventoryChart({ data }: InventoryChartProps) {
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
-                      const d = payload[0].payload as any
+                      const d = payload[0].payload as any;
                       return (
                         <div className="bg-background border rounded-lg p-3 shadow-md text-sm">
                           <div className="font-medium">{d.name}</div>
                           <div>Cantidad: {d.value}</div>
                           <div>Porcentaje: {d.percentage}</div>
                         </div>
-                      )
+                      );
                     }
-                    return null
+                    return null;
                   }}
                 />
                 <Legend
@@ -353,7 +348,9 @@ export function InventoryChart({ data }: InventoryChartProps) {
                     dataKey="entradas"
                     position="top"
                     className="fill-foreground"
-                    formatter={(v: number) => (v ? v.toLocaleString() : "")}
+                    formatter={(v: any) =>
+                      v ? Number(v).toLocaleString() : ""
+                    }
                   />
                 </Bar>
                 <Bar
@@ -366,7 +363,9 @@ export function InventoryChart({ data }: InventoryChartProps) {
                     dataKey="salidas"
                     position="top"
                     className="fill-foreground"
-                    formatter={(v: number) => (v ? v.toLocaleString() : "")}
+                    formatter={(v: any) =>
+                      v ? Number(v).toLocaleString() : ""
+                    }
                   />
                 </Bar>
                 <Legend
@@ -377,7 +376,9 @@ export function InventoryChart({ data }: InventoryChartProps) {
                           className="w-4 h-4 rounded-sm"
                           style={{ backgroundColor: "var(--chart-1)" }}
                         />
-                        <span className="text-sm text-foreground">Entradas</span>
+                        <span className="text-sm text-foreground">
+                          Entradas
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div

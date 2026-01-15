@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Customer } from "@/context/sales-context";
+import { Client } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,11 +30,11 @@ export function CustomerSelector({
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const getClients = () => {
+  const getClients = (): Client[] => {
     const stored = localStorage.getItem("pharmacy-clients");
     if (stored) {
       try {
-        return JSON.parse(stored);
+        return JSON.parse(stored) as Client[];
       } catch {}
     }
     return mockClients;
@@ -45,12 +46,12 @@ export function CustomerSelector({
       client.document.includes(searchTerm)
   );
 
-  const handleSelectCustomer = (client: any) => {
+  const handleSelectCustomer = (client: Client) => {
     setCustomer({
       name: client.name,
       document: client.document,
-      email: client.email,
-      address: client.address,
+      email: client.email || "",
+      address: client.address || "",
     });
     setIsDialogOpen(false);
     setSearchTerm("");
@@ -90,29 +91,39 @@ export function CustomerSelector({
             />
           </div>
 
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-60 overflow-y-auto px-1">
             <div className="space-y-2">
               <Button
                 variant="ghost"
-                className="w-full justify-start"
+                className="w-full justify-start border border-border rounded-lg p-4 h-auto hover:bg-accent hover:text-accent-foreground mb-2"
                 onClick={handleConsumidorFinal}
               >
                 <User className="w-4 h-4 mr-2" />
-                Consumidor Final
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">Consumidor Final</span>
+                  <span className="text-xs text-muted-foreground">
+                    Venta rápida sin datos
+                  </span>
+                </div>
               </Button>
 
               {filteredClients.map((client) => (
                 <Button
                   key={client.id}
                   variant="ghost"
-                  className="w-full justify-start h-auto py-3"
+                  className="w-full justify-start h-auto p-4 border border-border rounded-lg hover:bg-accent hover:text-accent-foreground mb-2"
                   onClick={() => handleSelectCustomer(client)}
                 >
-                  <div className="text-left">
+                  <div className="text-left w-full">
                     <p className="font-medium">{client.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {client.document} • {client.email}
-                    </p>
+                    <div className="flex justify-between items-center w-full mt-1">
+                      <p className="text-xs text-muted-foreground">
+                        {client.document}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                        {client.email}
+                      </p>
+                    </div>
                   </div>
                 </Button>
               ))}

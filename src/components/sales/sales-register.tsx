@@ -66,8 +66,15 @@ export function SalesRegister() {
       cashier: "Usuario Actual",
     };
 
-    addSale(saleData);
+    // Intentar registrar la venta
+    const saleId = addSale(saleData);
 
+    // Si addSale retorna undefined/null, es que falló la validación. No limpiamos el carrito.
+    if (!saleId) {
+      return;
+    }
+
+    // Si tuvo éxito, registramos los movimientos de inventario y limpiamos
     cart.forEach((item) => {
       addMovement("salida", item.id, item.quantity, "Venta punto de venta");
     });

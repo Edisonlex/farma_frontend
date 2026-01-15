@@ -537,14 +537,22 @@ export function MedicationDialog({
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
-              <div className="flex items-center justify-center">
-                <img
-                  src={form.watch("imageUrl") || `https://picsum.photos/seed/${encodeURIComponent(form.watch("name") || "med")}/120/120`}
-                  alt="Vista previa"
-                  className="w-24 h-24 rounded-md object-cover border border-border/40"
-                />
-              </div>
                   )}
+                />
+
+                <div className="flex items-center justify-center">
+                  <img
+                    src={
+                      form.watch("imageUrl") ||
+                      `https://picsum.photos/seed/${encodeURIComponent(
+                        form.watch("name") || "med"
+                      )}/120/120`
+                    }
+                    alt="Vista previa"
+                    className="w-24 h-24 rounded-md object-cover border border-border/40"
+                  />
+                </div>
+              </div>
 
               {/* Actions */}
               <div className="flex justify-end space-x-2 pt-4">

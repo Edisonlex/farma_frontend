@@ -131,6 +131,7 @@ export interface SystemConfig {
   autoBackup: boolean;
   backupFrequency: string;
   maxBackups: number;
+  maintenanceMode?: boolean;
 }
 
 export interface BackupConfig {
