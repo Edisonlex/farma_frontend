@@ -17,6 +17,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import { getExpiryStatus, getStockStatus } from "@/utils/statusUtils";
 import { useInventory } from "@/context/inventory-context";
@@ -69,12 +70,28 @@ export function MedicationsTableRow({
       className="group hover:bg-muted/20 transition-all duration-200 border-b border-border/40"
     >
       <TableCell className="py-3 px-4">
-        <div className="flex flex-col">
-          <div className="font-medium text-foreground/90 group-hover:text-foreground transition-colors">
-            {medication.name}
-          </div>
-          <div className="text-xs text-muted-foreground/80 mt-1">
-            {medication.activeIngredient}
+        <div className="flex items-start gap-3">
+          <Avatar className="size-8">
+            <AvatarImage
+              src={
+                medication.imageUrl ||
+                `https://picsum.photos/seed/${encodeURIComponent(
+                  medication.name
+                )}/64/64`
+              }
+              alt={medication.name}
+            />
+            <AvatarFallback>
+              {medication.name?.slice(0, 1) || "M"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <div className="font-medium text-foreground/90 group-hover:text-foreground transition-colors">
+              {medication.name}
+            </div>
+            <div className="text-xs text-muted-foreground/80 mt-1">
+              {medication.activeIngredient}
+            </div>
           </div>
         </div>
       </TableCell>

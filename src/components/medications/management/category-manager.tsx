@@ -26,7 +26,8 @@ import { useInventory } from "@/context/inventory-context";
 import { Category } from "..";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CategoryCreateSchema, CategorySchema } from "@/lib/schemas";
 
 export function CategoryManager() {
@@ -37,6 +38,8 @@ export function CategoryManager() {
   const form = useForm<{ name: string; description?: string }>({
     resolver: zodResolver(editingCategory ? CategorySchema.partial() : CategoryCreateSchema),
     defaultValues: { name: "", description: "" },
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
 
   const handleSubmit = (values: any) => {
@@ -94,6 +97,13 @@ export function CategoryManager() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                {Object.keys(form.formState.errors).length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      Corrige los campos marcados: {Object.values(form.formState.errors).map((e) => e?.message).filter(Boolean).join(" · ")}
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <FormField
                   control={form.control}
                   name="name"
@@ -103,6 +113,7 @@ export function CategoryManager() {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormDescription>Nombre único y claro</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -116,6 +127,7 @@ export function CategoryManager() {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormDescription>Máximo 500 caracteres</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

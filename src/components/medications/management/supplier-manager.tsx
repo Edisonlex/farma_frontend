@@ -27,7 +27,8 @@ import { Supplier } from "..";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
-import { SupplierCreateSchema, SupplierSchema } from "@/lib/schemas";
+import { SupplierCreateSchema, SupplierUpdateSchema } from "@/lib/schemas";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function SupplierManager() {
   const { suppliers, addSupplier, updateSupplier, deleteSupplier } =
@@ -35,8 +36,10 @@ export function SupplierManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const form = useForm<{ name: string; contact?: string; phone?: string; email?: string }>({
-    resolver: zodResolver(editingSupplier ? SupplierSchema.partial() : SupplierCreateSchema),
+    resolver: zodResolver(editingSupplier ? SupplierUpdateSchema : SupplierCreateSchema),
     defaultValues: { name: "", contact: "", phone: "", email: "" },
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
 
   const handleSubmit = (values: any) => {
@@ -99,6 +102,13 @@ export function SupplierManager() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                {Object.keys(form.formState.errors).length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      Corrige los campos marcados: {Object.values(form.formState.errors).map((e) => e?.message).filter(Boolean).join(" · ")}
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <FormField
                   control={form.control}
                   name="name"
@@ -108,6 +118,7 @@ export function SupplierManager() {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormDescription>Nombre del proveedor</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -148,6 +159,7 @@ export function SupplierManager() {
                       <FormControl>
                         <Input type="email" {...field} />
                       </FormControl>
+                      <FormDescription>Formato válido: usuario@dominio.com</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

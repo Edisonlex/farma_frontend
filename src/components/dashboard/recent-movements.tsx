@@ -11,12 +11,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Filter, X, Sparkles, TrendingUp, Download } from "lucide-react";
+import { Filter, X, Sparkles, TrendingUp, Download, FileText } from "lucide-react";
 import { useSales } from "@/context/sales-context";
 import { useInventory } from "@/context/inventory-context"; // Importar el contexto de inventario
 import { MovementList } from "./movement/MovementList";
 import { MovementFilters } from "./movement/MovementFilters";
 import { exportInventoryMovements } from "@/lib/excel-export";
+import { generatePDF } from "@/utils/file-exporter";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 interface Filters {
   type: string;
@@ -140,6 +142,20 @@ export function RecentMovements() {
     exportInventoryMovements(filteredMovements, activeFilters);
   };
 
+  const handleExportPDF = () => {
+    const reportData = {
+      type: "movements",
+      dateRange: { from: undefined, to: undefined },
+      category: "all",
+      supplier: "all",
+      batch: "",
+      data: filteredMovements,
+      generatedAt: new Date(),
+      totalItems: filteredMovements.length,
+    };
+    generatePDF(reportData, "movements");
+  };
+
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-4">
@@ -168,15 +184,28 @@ export function RecentMovements() {
               <Filter className="w-4 h-4" />
               {showFilters ? "Ocultar" : "Filtros"}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 border-border bg-background hover:bg-chart-5 hover:text-white"
-              onClick={handleExportExcel}
-            >
-              <Download className="w-4 h-4" />
-              Exportar
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 border-border bg-background hover:bg-chart-5 hover:text-white"
+                >
+                  <Download className="w-4 h-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background border-border">
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardHeader>

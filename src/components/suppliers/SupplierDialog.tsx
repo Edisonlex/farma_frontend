@@ -7,14 +7,20 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useInventory } from "@/context/inventory-context";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodForm } from "@/hooks/use-zod-form";
 import {
   Form,
   FormField,
@@ -24,7 +30,12 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
-import { SupplierCreateSchema, SupplierUpdateSchema, SupplierSchema } from "@/lib/schemas";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  SupplierCreateSchema,
+  SupplierUpdateSchema,
+  SupplierSchema,
+} from "@/lib/schemas";
 import type { Supplier } from "@/lib/types";
 
 interface SupplierDialogProps {
@@ -52,7 +63,7 @@ export function SupplierDialog({
 }: SupplierDialogProps) {
   const { addSupplier, updateSupplier } = useInventory();
   const isEditing = !!supplier;
-  const form = useForm<{
+  const form = useZodForm<{
     nombreComercial: string;
     razonSocial: string;
     tipo: "empresa" | "persona";
@@ -63,8 +74,7 @@ export function SupplierDialog({
     contact?: string;
     phone?: string;
     email?: string;
-  }>({
-    resolver: zodResolver(isEditing ? SupplierUpdateSchema : SupplierCreateSchema),
+  }>(isEditing ? SupplierUpdateSchema : SupplierCreateSchema, {
     defaultValues: {
       nombreComercial: "",
       razonSocial: "",
@@ -88,7 +98,9 @@ export function SupplierDialog({
         ruc: supplier.ruc || "",
         cedula: supplier.cedula || "",
         status: supplier.status,
-        fechaRegistro: (supplier.fechaRegistro ?? new Date()).toISOString().slice(0, 10),
+        fechaRegistro: (supplier.fechaRegistro ?? new Date())
+          .toISOString()
+          .slice(0, 10),
         contact: supplier.contact || "",
         phone: supplier.phone || "",
         email: supplier.email || "",
@@ -131,10 +143,35 @@ export function SupplierDialog({
           <DialogTitle>
             {supplier ? "Editar Proveedor" : "Nuevo Proveedor"}
           </DialogTitle>
+          <DialogDescription>
+            Valida RUC (13) para empresa o cédula (10) para persona. Teléfono
+            con formato Ecuador. La fecha de registro es requerida.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {Object.keys(form.formState.errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  Corrige los campos marcados:{" "}
+                  {Object.values(form.formState.errors)
+                    .map((e) => e?.message)
+                    .filter(Boolean)
+                    .join(" · ")}
+                </AlertDescription>
+              </Alert>
+            )}
+            {Object.keys(form.formState.errors).length > 0 && (
+              <div className="p-3 bg-muted rounded-lg text-xs">
+                <p className="font-medium mb-1">Consejos</p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>RUC empresa: 13 dígitos · Cédula persona: 10</li>
+                  <li>Teléfono Ecuador: +593 9XXXXXXXX / 09XXXXXXXX</li>
+                  <li>Fecha: AAAA-MM-DD</li>
+                </ul>
+              </div>
+            )}
             <FormField
               control={form.control}
               name="tipo"
@@ -194,6 +231,9 @@ export function SupplierDialog({
                     <FormControl>
                       <Input inputMode="numeric" placeholder="RUC" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      13 dígitos, validación automática
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -206,8 +246,15 @@ export function SupplierDialog({
                   <FormItem>
                     <FormLabel>Cédula *</FormLabel>
                     <FormControl>
-                      <Input inputMode="numeric" placeholder="Cédula" {...field} />
+                      <Input
+                        inputMode="numeric"
+                        placeholder="Cédula"
+                        {...field}
+                      />
                     </FormControl>
+                    <FormDescription>
+                      10 dígitos, validación automática
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -222,7 +269,10 @@ export function SupplierDialog({
                   <FormItem>
                     <FormLabel>Estado *</FormLabel>
                     <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger className="w-full border-border bg-background">
                           <SelectValue placeholder="Selecciona estado" />
                         </SelectTrigger>
@@ -244,8 +294,56 @@ export function SupplierDialog({
                   <FormItem>
                     <FormLabel>Fecha de registro *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input
+                        inputMode="numeric"
+                        maxLength={10}
+                        placeholder="AAAA-MM-DD"
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const s = e.target.value.replace(/\D/g, "");
+                          let y = s.slice(0, 4);
+                          let m = s.slice(4, 6);
+                          let d = s.slice(6, 8);
+                          const now = new Date();
+                          const nowY = now.getFullYear();
+                          if (y.length === 4) {
+                            let yi = parseInt(y, 10);
+                            if (yi < 1900) yi = 1900;
+                            if (yi > nowY) yi = nowY;
+                            y = String(yi).padStart(4, "0");
+                          }
+                          if (m.length === 2) {
+                            let mi = parseInt(m, 10);
+                            if (mi < 1) mi = 1;
+                            if (mi > 12) mi = 12;
+                            m = String(mi).padStart(2, "0");
+                          }
+                          if (d.length === 2) {
+                            let di = parseInt(d, 10);
+                            if (di < 1) di = 1;
+                            if (di > 31) di = 31;
+                            if (y.length === 4 && m.length === 2) {
+                              const yi = parseInt(y, 10);
+                              const mi = parseInt(m, 10);
+                              const maxDay = new Date(yi, mi, 0).getDate();
+                              if (di > maxDay) di = maxDay;
+                              // no futuro
+                              const candidate = new Date(yi, mi - 1, di);
+                              if (candidate > now) {
+                                const today = new Date();
+                                y = String(today.getFullYear());
+                                m = String(today.getMonth() + 1).padStart(2, "0");
+                                di = today.getDate();
+                              }
+                            }
+                            d = String(di).padStart(2, "0");
+                          }
+                          const masked = [y, m, d].filter(Boolean).join("-");
+                          field.onChange(masked);
+                        }}
+                      />
                     </FormControl>
+                    <FormDescription>Formato AAAA-MM-DD</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -274,9 +372,18 @@ export function SupplierDialog({
                   <FormItem>
                     <FormLabel>Teléfono (opcional)</FormLabel>
                     <FormControl>
-                      <Input inputMode="tel" placeholder="+593 9XXXXXXXX" {...field} onChange={(e) => field.onChange(formatEcPhone(e.target.value))} />
+                      <Input
+                        inputMode="tel"
+                        placeholder="+593 9XXXXXXXX"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(formatEcPhone(e.target.value))
+                        }
+                      />
                     </FormControl>
-                    <FormDescription className="text-xs">Formato Ecuador: +593 9XXXXXXXX / 09XXXXXXXX / 0AXXXXXXX</FormDescription>
+                    <FormDescription className="text-xs">
+                      Formato Ecuador: +593 9XXXXXXXX / 09XXXXXXXX / 0AXXXXXXX
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -289,7 +396,11 @@ export function SupplierDialog({
                   <FormItem className="md:col-span-2">
                     <FormLabel>Email (opcional)</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@ejemplo.com" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="email@ejemplo.com"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -298,10 +409,16 @@ export function SupplierDialog({
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">{supplier ? "Actualizar" : "Crear"} Proveedor</Button>
+              <Button type="submit">
+                {supplier ? "Actualizar" : "Crear"} Proveedor
+              </Button>
             </div>
           </form>
         </Form>
@@ -309,8 +426,8 @@ export function SupplierDialog({
     </Dialog>
   );
 }
-  const formatEcPhone = (v: string) => {
-    const s = v.replace(/[^0-9+]/g, "");
-    if (s.startsWith("+593")) return "+593 " + s.slice(4).replace(/\s+/g, "");
-    return s;
-  };
+const formatEcPhone = (v: string) => {
+  const s = v.replace(/[^0-9+]/g, "");
+  if (s.startsWith("+593")) return "+593 " + s.slice(4).replace(/\s+/g, "");
+  return s;
+};

@@ -91,23 +91,41 @@ const SupplierBaseSchema = z.object({
 export const SupplierSchema = SupplierBaseSchema.superRefine((val, ctx) => {
   if (val.tipo === "empresa") {
     if (!val.ruc || !val.ruc.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ruc"], message: "RUC requerido" });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ruc"],
+        message: "RUC requerido",
+      });
     }
   } else if (val.tipo === "persona") {
     if (!val.cedula || !val.cedula.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["cedula"], message: "Cédula requerida" });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cedula"],
+        message: "Cédula requerida",
+      });
     }
   }
 });
 
-export const SupplierCreateSchema = SupplierBaseSchema.omit({ id: true }).superRefine((val, ctx) => {
+export const SupplierCreateSchema = SupplierBaseSchema.omit({
+  id: true,
+}).superRefine((val, ctx) => {
   if (val.tipo === "empresa") {
     if (!val.ruc || !val.ruc.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ruc"], message: "RUC requerido" });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ruc"],
+        message: "RUC requerido",
+      });
     }
   } else if (val.tipo === "persona") {
     if (!val.cedula || !val.cedula.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["cedula"], message: "Cédula requerida" });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cedula"],
+        message: "Cédula requerida",
+      });
     }
   }
 });
@@ -117,11 +135,19 @@ export const SupplierUpdateSchema = SupplierBaseSchema.partial()
   .superRefine((val, ctx) => {
     if (val.tipo === "empresa") {
       if (val.ruc !== undefined && !val.ruc.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ruc"], message: "RUC requerido" });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ruc"],
+          message: "RUC requerido",
+        });
       }
     } else if (val.tipo === "persona") {
       if (val.cedula !== undefined && !val.cedula.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["cedula"], message: "Cédula requerida" });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["cedula"],
+          message: "Cédula requerida",
+        });
       }
     }
   });
@@ -455,6 +481,47 @@ export const ClientSchema = ClientBaseSchema.superRefine((val, ctx) => {
         path: ["taxId"],
         message: "El RUC/NIT es requerido",
       });
+    }
+  }
+  if (val.birthDate) {
+    const s = String(val.birthDate);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (!m) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["birthDate"],
+        message: "Fecha inválida (AAAA-MM-DD)",
+      });
+    } else {
+      const yyyy = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10);
+      const dd = parseInt(m[3], 10);
+      const d = new Date(yyyy, mm - 1, dd);
+      const valid =
+        d.getFullYear() === yyyy &&
+        d.getMonth() === mm - 1 &&
+        d.getDate() === dd;
+      const notFuture = d <= new Date();
+      const plausible = yyyy >= 1900;
+      const now = new Date();
+      let age = now.getFullYear() - d.getFullYear();
+      const hadBirthday =
+        now.getMonth() > d.getMonth() ||
+        (now.getMonth() === d.getMonth() && now.getDate() >= d.getDate());
+      if (!hadBirthday) age -= 1;
+      if (!valid || !notFuture || !plausible) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birthDate"],
+          message: "Fecha de nacimiento inválida",
+        });
+      } else if (age < 18) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birthDate"],
+          message: "Debe ser mayor de 18 años",
+        });
+      }
     }
   }
 });

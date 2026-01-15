@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { UserRole } from "@/lib/auth";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodForm } from "@/hooks/use-zod-form";
 import {
   Form,
   FormField,
@@ -31,6 +31,7 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UserFormCreateSchema, UserFormUpdateSchema } from "@/lib/schemas";
 
 interface UserDialogProps {
@@ -47,7 +48,7 @@ export function UserDialog({
   onSave,
 }: UserDialogProps) {
   const isEditing = !!user;
-  const form = useForm<{
+  const form = useZodForm<{
     name: string;
     email: string;
     role: UserRole;
@@ -56,8 +57,7 @@ export function UserDialog({
     phone?: string;
     department?: string;
     isActive: boolean;
-  }>({
-    resolver: zodResolver(isEditing ? UserFormUpdateSchema : UserFormCreateSchema),
+  }>(isEditing ? UserFormUpdateSchema : UserFormCreateSchema, {
     defaultValues: {
       name: "",
       email: "",
@@ -106,10 +106,35 @@ export function UserDialog({
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{user ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
+          <DialogDescription>
+            Se validan email y contraseña (mínimo 6). Teléfono con formato de
+            Ecuador. El rol seleccionado define permisos y accesos disponibles.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {Object.keys(form.formState.errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  Corrige los campos marcados:{" "}
+                  {Object.values(form.formState.errors)
+                    .map((e) => e?.message)
+                    .filter(Boolean)
+                    .join(" · ")}
+                </AlertDescription>
+              </Alert>
+            )}
+            {Object.keys(form.formState.errors).length > 0 && (
+              <div className="p-3 bg-muted rounded-lg text-xs">
+                <p className="font-medium mb-1">Consejos</p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>Email: usuario@dominio.com</li>
+                  <li>Contraseña: mínimo 6 caracteres</li>
+                  <li>Teléfono Ecuador: +593 9XXXXXXXX / 09XXXXXXXX</li>
+                </ul>
+              </div>
+            )}
             <FormField
               control={form.control}
               name="name"
@@ -117,7 +142,10 @@ export function UserDialog({
                 <FormItem>
                   <FormLabel>Nombre Completo</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nombre completo del usuario" {...field} />
+                    <Input
+                      placeholder="Nombre completo del usuario"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -131,7 +159,11 @@ export function UserDialog({
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="email@ejemplo.com" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="email@ejemplo.com"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -143,10 +175,17 @@ export function UserDialog({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{user ? "Nueva Contraseña (opcional)" : "Contraseña"}</FormLabel>
+                  <FormLabel>
+                    {user ? "Nueva Contraseña (opcional)" : "Contraseña"}
+                  </FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Mínimo 6 caracteres" {...field} />
+                    <Input
+                      type="password"
+                      placeholder="Mínimo 6 caracteres"
+                      {...field}
+                    />
                   </FormControl>
+                  <FormDescription>Mínimo 6 caracteres</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -160,8 +199,15 @@ export function UserDialog({
                   <FormItem>
                     <FormLabel>Confirmar Contraseña</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Repetir contraseña" {...field} />
+                      <Input
+                        type="password"
+                        placeholder="Repetir contraseña"
+                        {...field}
+                      />
                     </FormControl>
+                    <FormDescription>
+                      Debe coincidir con la contraseña
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -175,9 +221,18 @@ export function UserDialog({
                 <FormItem>
                   <FormLabel>Teléfono (opcional)</FormLabel>
                   <FormControl>
-                    <Input inputMode="tel" placeholder="+593 9XXXXXXXX" {...field} onChange={(e) => field.onChange(formatEcPhone(e.target.value))} />
+                    <Input
+                      inputMode="tel"
+                      placeholder="+593 9XXXXXXXX"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(formatEcPhone(e.target.value))
+                      }
+                    />
                   </FormControl>
-                  <FormDescription>Formato Ecuador: +593 9XXXXXXXX / 09XXXXXXXX / 0AXXXXXXX</FormDescription>
+                  <FormDescription>
+                    Formato Ecuador: +593 9XXXXXXXX / 09XXXXXXXX / 0AXXXXXXX
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -190,17 +245,24 @@ export function UserDialog({
                 <FormItem>
                   <FormLabel>Departamento (opcional)</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar departamento" />
-                    </SelectTrigger>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar departamento" />
+                      </SelectTrigger>
+                    </FormControl>
                     <SelectContent className="border-border bg-background">
                       <SelectItem value="none">Sin departamento</SelectItem>
                       <SelectItem value="farmacia">Farmacia</SelectItem>
                       <SelectItem value="almacen">Almacén</SelectItem>
-                      <SelectItem value="administracion">Administración</SelectItem>
+                      <SelectItem value="administracion">
+                        Administración
+                      </SelectItem>
                       <SelectItem value="ventas">Ventas</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormDescription>
+                    Organiza al usuario para reportes y permisos internos
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -213,40 +275,57 @@ export function UserDialog({
                 <FormItem>
                   <FormLabel>Rol</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar rol" />
-                    </SelectTrigger>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar rol" />
+                      </SelectTrigger>
+                    </FormControl>
                     <SelectContent className="border-border bg-background">
                       <SelectItem value="administrador">
                         <div>
                           <div className="font-medium">Administrador</div>
-                          <div className="text-xs ">Acceso completo al sistema</div>
+                          <div className="text-xs ">
+                            Acceso completo al sistema
+                          </div>
                         </div>
                       </SelectItem>
                       <SelectItem value="farmaceutico">
                         <div>
                           <div className="font-medium">Farmacéutico</div>
-                          <div className="text-xs ">Gestión de medicamentos y reportes</div>
+                          <div className="text-xs ">
+                            Gestión de medicamentos y reportes
+                          </div>
                         </div>
                       </SelectItem>
                       <SelectItem value="tecnico">
                         <div>
                           <div className="font-medium">Técnico</div>
-                          <div className="text-xs">Consulta de inventario y alertas</div>
+                          <div className="text-xs">
+                            Consulta de inventario y alertas
+                          </div>
                         </div>
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormDescription>
+                    El rol define permisos y accesos disponibles
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">{user ? "Actualizar" : "Crear"} Usuario</Button>
+              <Button type="submit">
+                {user ? "Actualizar" : "Crear"} Usuario
+              </Button>
             </div>
           </form>
         </Form>
@@ -254,8 +333,8 @@ export function UserDialog({
     </Dialog>
   );
 }
-  const formatEcPhone = (v: string) => {
-    const s = v.replace(/[^0-9+]/g, "");
-    if (s.startsWith("+593")) return "+593 " + s.slice(4).replace(/\s+/g, "");
-    return s;
-  };
+const formatEcPhone = (v: string) => {
+  const s = v.replace(/[^0-9+]/g, "");
+  if (s.startsWith("+593")) return "+593 " + s.slice(4).replace(/\s+/g, "");
+  return s;
+};

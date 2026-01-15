@@ -65,7 +65,11 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
     const generated: Alert[] = medications.flatMap((med) => {
       const medAlerts: Alert[] = [];
 
-      // Stock crítico
+      // Stock crítico y bajo (mutuamente excluyentes)
+      const effectiveMinStock =
+        med.minStock && med.minStock > 0
+          ? med.minStock
+          : notificationConfig.stockThreshold ?? med.minStock;
       if (med.quantity === 0) {
         medAlerts.push({
           id: `${med.id}-stock-critico`,
@@ -77,15 +81,14 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
           date: now,
           resolved: false,
         });
-      }
-
-      // Stock bajo con override por configuración
-      const effectiveMinStock = med.minStock && med.minStock > 0
-        ? med.minStock
-        : (notificationConfig.stockThreshold ?? med.minStock);
-
-      if (med.quantity > 0 && effectiveMinStock && med.quantity <= effectiveMinStock) {
-        const criticalThreshold = notificationConfig.criticalStockThreshold ?? Math.ceil((effectiveMinStock || 2) / 2);
+      } else if (
+        effectiveMinStock &&
+        med.quantity > 0 &&
+        med.quantity <= effectiveMinStock
+      ) {
+        const criticalThreshold =
+          notificationConfig.criticalStockThreshold ??
+          Math.ceil((effectiveMinStock || 2) / 2);
         const severity = med.quantity <= criticalThreshold ? "high" : "medium";
         medAlerts.push({
           id: `${med.id}-stock-bajo`,
@@ -140,13 +143,24 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
           resolved: false,
         });
       } else if (daysToExpiry <= expiryDays) {
-        const severity = daysToExpiry <= criticalExpiryDays ? "high" : "medium";
+        let severity: Alert["severity"] =
+          daysToExpiry <= criticalExpiryDays ? "high" : "medium";
+        // Escalar si también hay stock bajo
+        const isLowStock =
+          effectiveMinStock &&
+          med.quantity > 0 &&
+          med.quantity <= effectiveMinStock;
+        if (isLowStock) {
+          severity = "high";
+        }
         medAlerts.push({
           id: `${med.id}-por-vencer`,
           type: "vencimiento",
           medicationId: med.id,
           medicationName: med.name,
-          message: `Vence en ${daysToExpiry} días`,
+          message: isLowStock
+            ? `Vence en ${daysToExpiry} días y stock bajo (${med.quantity}/${effectiveMinStock})`
+            : `Vence en ${daysToExpiry} días`,
           severity,
           date: now,
           resolved: false,

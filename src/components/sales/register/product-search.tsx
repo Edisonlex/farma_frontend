@@ -146,9 +146,7 @@ export function ProductSearch({
             >
               <div className="flex-1">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-primary/5 mt-0.5">
-                    <Pill className="w-4 h-4 text-primary" />
-                  </div>
+                  <img src={medication.imageUrl || `https://picsum.photos/seed/${encodeURIComponent(medication.name)}/64/64`} alt={medication.name} className="w-10 h-10 rounded-md object-cover" />
                   <div>
                     <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                       {medication.name}

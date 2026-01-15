@@ -10,6 +10,7 @@ export interface Medication {
   activeIngredient?: string;
   price: number;
   location?: string;
+  imageUrl?: string;
   lastUpdated?: Date;
 }
 

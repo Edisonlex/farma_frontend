@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Select,
   SelectContent,
@@ -23,10 +22,10 @@ export function PaymentMethodSelector({
     <div className="space-y-2">
       <Label>Método de Pago</Label>
       <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-        <SelectTrigger className="border-border/50">
+        <SelectTrigger className="border-border bg-background">
           <SelectValue placeholder="Seleccionar método" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-background border-border">
           <SelectItem value="cash" className="flex items-center gap-2">
             <CircleDollarSign className="w-4 h-4" />
             Efectivo

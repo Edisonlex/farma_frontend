@@ -8,13 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+// Tooltip y contenedor se manejan con Recharts directamente en este componente
 import {
   Bar,
   BarChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
+  CartesianGrid,
+  LabelList,
   PieChart,
   Pie,
   Cell,
@@ -269,7 +271,8 @@ export function InventoryChart({ data }: InventoryChartProps) {
                   innerRadius={70}
                   paddingAngle={2}
                   dataKey="value"
-                  label={false}
+                  labelLine={false}
+                  label={({ value }) => `${value}`}
                 >
                   {sortedCategoryData.map((entry, index) => (
                     <Cell
@@ -283,20 +286,16 @@ export function InventoryChart({ data }: InventoryChartProps) {
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
-                      const data = payload[0].payload;
+                      const d = payload[0].payload as any
                       return (
-                        <div className="bg-background border rounded-lg p-3 shadow-md">
-                          <p className="font-medium">{data.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Cantidad: {data.value} unidades
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Porcentaje: {data.percentage}
-                          </p>
+                        <div className="bg-background border rounded-lg p-3 shadow-md text-sm">
+                          <div className="font-medium">{d.name}</div>
+                          <div>Cantidad: {d.value}</div>
+                          <div>Porcentaje: {d.percentage}</div>
                         </div>
-                      );
+                      )
                     }
-                    return null;
+                    return null
                   }}
                 />
                 <Legend
@@ -327,9 +326,10 @@ export function InventoryChart({ data }: InventoryChartProps) {
               <BarChart
                 data={data?.monthlyMovements || []}
                 margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
-                barSize={35}
-                barGap={3}
+                barSize={32}
+                barGap={6}
               >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="month"
                   axisLine={false}
@@ -340,20 +340,35 @@ export function InventoryChart({ data }: InventoryChartProps) {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12 }}
+                  tickFormatter={(v) => Number(v).toLocaleString()}
                 />
                 <Tooltip content={<CustomBarTooltip />} />
                 <Bar
                   dataKey="entradas"
                   fill={"var(--chart-1)"}
-                  radius={[4, 4, 0, 0]}
+                  radius={[6, 6, 0, 0]}
                   name="Entradas"
-                />
+                >
+                  <LabelList
+                    dataKey="entradas"
+                    position="top"
+                    className="fill-foreground"
+                    formatter={(v: number) => (v ? v.toLocaleString() : "")}
+                  />
+                </Bar>
                 <Bar
                   dataKey="salidas"
                   fill={"var(--chart-2)"}
-                  radius={[4, 4, 0, 0]}
+                  radius={[6, 6, 0, 0]}
                   name="Salidas"
-                />
+                >
+                  <LabelList
+                    dataKey="salidas"
+                    position="top"
+                    className="fill-foreground"
+                    formatter={(v: number) => (v ? v.toLocaleString() : "")}
+                  />
+                </Bar>
                 <Legend
                   content={() => (
                     <div className="flex gap-4 justify-center pt-4">
@@ -362,9 +377,7 @@ export function InventoryChart({ data }: InventoryChartProps) {
                           className="w-4 h-4 rounded-sm"
                           style={{ backgroundColor: "var(--chart-1)" }}
                         />
-                        <span className="text-sm text-foreground">
-                          Entradas
-                        </span>
+                        <span className="text-sm text-foreground">Entradas</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div

@@ -1,8 +1,18 @@
 // contexts/inventory-context.tsx
 "use client";
 
-import type { Category, Supplier, Medication, InventoryMovement } from "@/lib/types";
-import { mockMedications, mockMovements, mockSuppliers, mockCategories } from "@/lib/mock-data";
+import type {
+  Category,
+  Supplier,
+  Medication,
+  InventoryMovement,
+} from "@/lib/types";
+import {
+  mockMedications,
+  mockMovements,
+  mockSuppliers,
+  mockCategories,
+} from "@/lib/mock-data";
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,6 +28,23 @@ import {
   SupplierSchema,
   SupplierUpdateSchema,
 } from "@/lib/schemas";
+
+const defaultImageForName = (name: string) => {
+  const key = (name || "").toLowerCase();
+  if (key.includes("paracetamol"))
+    return "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=200&h=200&fit=crop";
+  if (key.includes("ibuprofeno"))
+    return "https://images.unsplash.com/photo-1584305574643-0ae9ce7d4926?w=200&h=200&fit=crop";
+  if (key.includes("amoxicilina") || key.includes("azitro"))
+    return "https://images.unsplash.com/photo-1608138419010-b8f31135b9c2?w=200&h=200&fit=crop";
+  if (key.includes("omeprazol"))
+    return "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=200&h=200&fit=crop";
+  if (key.includes("loratadina") || key.includes("cetirizina"))
+    return "https://images.unsplash.com/photo-1581608198711-b7a0c3c0f0c5?w=200&h=200&fit=crop";
+  if (key.includes("insulina"))
+    return "https://images.unsplash.com/photo-1551198290-dcf8a5d4f130?w=200&h=200&fit=crop";
+  return `https://picsum.photos/seed/${encodeURIComponent(name || "med")}/200`;
+};
 
 interface InventoryContextType {
   medications: Medication[];
@@ -74,7 +101,9 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     try {
       return crypto.randomUUID();
     } catch {
-      return `${Date.now().toString()}-${Math.random().toString(36).slice(2, 10)}`;
+      return `${Date.now().toString()}-${Math.random()
+        .toString(36)
+        .slice(2, 10)}`;
     }
   };
 
@@ -96,6 +125,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
           ...m,
           expiryDate: new Date(m.expiryDate),
           lastUpdated: m.lastUpdated ? new Date(m.lastUpdated) : undefined,
+          imageUrl: m.imageUrl || defaultImageForName(m.name),
         }));
         setMedications(parsed);
       }
@@ -145,6 +175,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const newMedication: Medication = {
       ...v.data,
       id: Date.now().toString(),
+      imageUrl: v.data.imageUrl || defaultImageForName(v.data.name),
     };
 
     const newMovement: InventoryMovement = {
@@ -236,7 +267,9 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       reason,
     });
     if (!inputValidation.success) {
-      toast.error(inputValidation.error.issues[0]?.message || "Ajuste inválido");
+      toast.error(
+        inputValidation.error.issues[0]?.message || "Ajuste inválido"
+      );
       return;
     }
 
@@ -336,7 +369,11 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   };
 
   const generateBatch = (name: string) => {
-    const prefix = (name || "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "LOT";
+    const prefix =
+      (name || "")
+        .replace(/[^A-Za-z]/g, "")
+        .slice(0, 3)
+        .toUpperCase() || "LOT";
     const suffix = Date.now().toString().slice(-5);
     return `${prefix}${suffix}`;
   };
@@ -344,14 +381,26 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const processSupplierReturns = () => {
     const today = new Date();
     medications.forEach((med) => {
-      const diffDays = Math.ceil((med.expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.ceil(
+        (med.expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
       if (diffDays <= 0 && med.quantity > 0) {
-        addMovement("salida", med.id, med.quantity, "Devolución a proveedor (vencido)");
+        addMovement(
+          "salida",
+          med.id,
+          med.quantity,
+          "Devolución a proveedor (vencido)"
+        );
         const newExpiry = new Date(today);
         newExpiry.setMonth(newExpiry.getMonth() + 12);
         const newBatch = generateBatch(med.name);
         updateMedication(med.id, { expiryDate: newExpiry, batch: newBatch });
-        addMovement("entrada", med.id, med.quantity, "Reposición por proveedor (nuevo lote)");
+        addMovement(
+          "entrada",
+          med.id,
+          med.quantity,
+          "Reposición por proveedor (nuevo lote)"
+        );
       }
     });
     toast.success("Devoluciones de productos vencidos procesadas");
@@ -387,7 +436,9 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const nameNorm = v.data.name.trim().toLowerCase();
-    const exists = categories.some((c) => c.name.trim().toLowerCase() === nameNorm);
+    const exists = categories.some(
+      (c) => c.name.trim().toLowerCase() === nameNorm
+    );
     if (exists) {
       toast.error("La categoría ya existe");
       return;

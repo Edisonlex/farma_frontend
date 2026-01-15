@@ -34,8 +34,7 @@ import { useInventory } from "@/context/inventory-context";
 import { CategoryDialog } from "../management/CategoryDialog";
 import { SupplierDialog } from "../suppliers/SupplierDialog";
 // Importar los diálogos completos
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodForm } from "@/hooks/use-zod-form";
 import {
   Form,
   FormField,
@@ -43,9 +42,10 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MedicationCreateSchema, MedicationUpdateSchema } from "@/lib/schemas";
-
 
 interface MedicationDialogProps {
   open: boolean;
@@ -63,12 +63,18 @@ export function MedicationDialog({
   const { categories, suppliers } = useInventory();
   const [loading, setLoading] = useState(false);
   const isEditing = !!medication;
+
   const generateBatch = (name: string) => {
-    const prefix = (name || "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "LOT";
+    const prefix =
+      (name || "")
+        .replace(/[^A-Za-z]/g, "")
+        .slice(0, 3)
+        .toUpperCase() || "LOT";
     const suffix = Date.now().toString().slice(-5);
     return `${prefix}${suffix}`;
   };
-  const form = useForm<{
+
+  const form = useZodForm<{
     name: string;
     batch: string;
     expiryDate: Date;
@@ -79,8 +85,8 @@ export function MedicationDialog({
     activeIngredient?: string;
     price: number;
     location: string;
-  }>({
-    resolver: zodResolver(isEditing ? MedicationUpdateSchema : MedicationCreateSchema),
+    imageUrl?: string;
+  }>(isEditing ? MedicationUpdateSchema : MedicationCreateSchema, {
     defaultValues: {
       name: "",
       batch: "",
@@ -92,6 +98,7 @@ export function MedicationDialog({
       activeIngredient: undefined,
       price: 0,
       location: "",
+      imageUrl: "",
     },
   });
 
@@ -112,6 +119,7 @@ export function MedicationDialog({
         activeIngredient: medication.activeIngredient,
         price: medication.price,
         location: medication.location,
+        imageUrl: medication.imageUrl || "",
       });
     } else {
       form.reset({
@@ -125,6 +133,7 @@ export function MedicationDialog({
         activeIngredient: undefined,
         price: 0,
         location: "",
+        imageUrl: "",
       });
     }
   }, [medication, open, form]);
@@ -133,7 +142,9 @@ export function MedicationDialog({
     const subscription = form.watch((value, { name: changed }) => {
       if (!isEditing && changed === "name") {
         const current = value?.name || "";
-        form.setValue("batch", generateBatch(current), { shouldValidate: false });
+        form.setValue("batch", generateBatch(current), {
+          shouldValidate: false,
+        });
       }
     });
     return () => subscription.unsubscribe();
@@ -184,256 +195,381 @@ export function MedicationDialog({
               {isEditing
                 ? "Modifica la información del medicamento seleccionado."
                 : "Completa la información para agregar un nuevo medicamento al inventario."}
+              Requiere categoría y proveedor, cantidades válidas y fecha de
+              vencimiento; el lote se autogenera y el precio debe ser mayor o
+              igual a 0.
             </DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
-          <motion.form
-            key={refreshKey}
-            onSubmit={form.handleSubmit(handleSubmit)}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
-          >
-            {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre del Medicamento *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ej. Paracetamol 500mg" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              
-            </div>
-
-            {/* Category and Supplier */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Categoría *</Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    type="button"
-                    onClick={() => setCategoryDialogOpen(true)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Nueva
-                  </Button>
+            <motion.form
+              key={refreshKey}
+              onSubmit={form.handleSubmit(handleSubmit)}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              {Object.keys(form.formState.errors).length > 0 && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Corrige los campos marcados:{" "}
+                    {Object.values(form.formState.errors)
+                      .map((e) => e?.message)
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </AlertDescription>
+                </Alert>
+              )}
+              {Object.keys(form.formState.errors).length > 0 && (
+                <div className="p-3 bg-muted rounded-lg text-xs">
+                  <p className="font-medium mb-1">Consejos</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Cantidad/Stock mínimo: enteros ≥ 0</li>
+                    <li>Precio: usa punto para decimales (ej. 12.50)</li>
+                    <li>Fecha de vencimiento: seleccionar en el calendario</li>
+                  </ul>
                 </div>
+              )}
+
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="category"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="border-border bg-background">
-                    <SelectValue placeholder="Seleccionar categoría" />
-                  </SelectTrigger>
-                        <SelectContent className="bg-background border-border">
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Nombre del Medicamento *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ej. Paracetamol 500mg" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Proveedor *</Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    type="button"
-                    onClick={() => setSupplierDialogOpen(true)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Nuevo
-                  </Button>
-                </div>
-                <FormField
-                  control={form.control}
-                  name="supplier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="border-border bg-background">
-                          <SelectValue placeholder="Seleccionar proveedor" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border-border">
-                          {suppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Lote (autogenerado) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="batch"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lote *</FormLabel>
-                    <FormControl>
-                      <Input {...field} readOnly />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Quantities and Price */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="quantity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cantidad *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={field.value}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="minStock"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Stock Mínimo *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={field.value}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Precio Unitario *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={field.value}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Expiry Date */}
-            <div className="space-y-2">
-              <FormField
-                control={form.control}
-                name="expiryDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha de Vencimiento *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
+              {/* Category and Supplier */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Categoría *</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      type="button"
+                      onClick={() => setCategoryDialogOpen(true)}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Nueva
+                    </Button>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: es })
-                          ) : (
-                            <span>Seleccionar fecha</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[320px] min-w-[320px] p-0 border-border bg-background">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => date && field.onChange(date)}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                          <FormControl>
+                            <SelectTrigger className="border-border bg-background">
+                              <SelectValue placeholder="Seleccionar categoría" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-background border-border">
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Clasifica para reportes y análisis
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            {/* Actions */}
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Guardando...
-                  </>
-                ) : isEditing ? (
-                  "Actualizar"
-                ) : (
-                  "Agregar"
-                )}
-              </Button>
-            </div>
-          </motion.form>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Proveedor *</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      type="button"
+                      onClick={() => setSupplierDialogOpen(true)}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Nuevo
+                    </Button>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="supplier"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="border-border bg-background">
+                              <SelectValue placeholder="Seleccionar proveedor" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-background border-border">
+                            {suppliers.map((supplier) => (
+                              <SelectItem key={supplier.id} value={supplier.id}>
+                                {supplier.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Proveedor principal del producto
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Lote (autogenerado) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="batch"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lote *</FormLabel>
+                      <FormControl>
+                        <Input {...field} readOnly />
+                      </FormControl>
+                      <FormDescription>
+                        Se autogenera a partir del nombre
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Quantities and Price */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cantidad *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Número entero mayor o igual a 0
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="minStock"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stock Mínimo *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Umbral mínimo para alertas de stock
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Precio Unitario *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        USD, usa punto para decimales
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Expiry Date */}
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="expiryDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha de Vencimiento *</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: es })
+                            ) : (
+                              <span>Seleccionar fecha</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[320px] min-w-[320px] p-0 border-border bg-background">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => date && field.onChange(date)}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Asegura alertas de vencimiento
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Activo y Ubicación */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="activeIngredient"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Principio Activo (opcional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ej. Acetaminofén" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Para búsquedas y análisis clínico
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ubicación en almacén *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Estante A-3, Caja 12..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Ayuda a la trazabilidad y picking
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Imagen */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Imagen del producto (URL)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Usa una URL segura (https). Opcional.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+              <div className="flex items-center justify-center">
+                <img
+                  src={form.watch("imageUrl") || `https://picsum.photos/seed/${encodeURIComponent(form.watch("name") || "med")}/120/120`}
+                  alt="Vista previa"
+                  className="w-24 h-24 rounded-md object-cover border border-border/40"
+                />
+              </div>
+                  )}
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => onOpenChange(false)}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : isEditing ? (
+                    "Actualizar"
+                  ) : (
+                    "Agregar"
+                  )}
+                </Button>
+              </div>
+            </motion.form>
           </Form>
         </DialogContent>
       </Dialog>

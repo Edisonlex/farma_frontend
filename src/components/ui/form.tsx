@@ -105,11 +105,13 @@ function FormLabel({
 }
 
 function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+  const { error, formItemId, formDescriptionId, formMessageId, isDirty, isTouched } = useFormField()
 
   return (
     <Slot
       data-slot="form-control"
+      data-valid={!error && (isDirty || isTouched) ? true : undefined}
+      data-error={!!error}
       id={formItemId}
       aria-describedby={
         !error

@@ -109,7 +109,9 @@ export async function signIn(email: string, password: string): Promise<User | nu
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   const user = mockUsers.find((u) => u.email === email)
-  if (user && password === "password123") {
+  const override = typeof window !== "undefined" ? localStorage.getItem(`pharmacare_pwd_override:${email}`) : null
+  const isValid = override ? password === override : password === "password123"
+  if (user && isValid) {
     return { ...user, lastLogin: new Date() }
   }
   return null
@@ -124,4 +126,42 @@ export async function getCurrentUser(): Promise<User | null> {
   // Simulate checking stored session
   const stored = localStorage.getItem("pharmacare_user")
   return stored ? JSON.parse(stored) : null
+}
+
+// Password reset (mock) — ready to connect backend
+export async function requestPasswordReset(email: string): Promise<{ success: boolean; code?: string }> {
+  await new Promise((resolve) => setTimeout(resolve, 800))
+  const user = mockUsers.find((u) => u.email === email)
+  if (!user) return { success: false }
+  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  try {
+    localStorage.setItem(`pharmacare_reset_code:${email}`, JSON.stringify({ code, expiresAt: Date.now() + 10 * 60 * 1000 }))
+  } catch {}
+  // In backend, send email with 'code'
+  return { success: true, code }
+}
+
+export async function verifyResetCode(email: string, code: string): Promise<boolean> {
+  await new Promise((resolve) => setTimeout(resolve, 300))
+  try {
+    const raw = localStorage.getItem(`pharmacare_reset_code:${email}`)
+    if (!raw) return false
+    const { code: stored, expiresAt } = JSON.parse(raw)
+    if (Date.now() > Number(expiresAt)) return false
+    return String(stored) === String(code)
+  } catch {
+    return false
+  }
+}
+
+export async function resetPassword(email: string, newPassword: string): Promise<boolean> {
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  const user = mockUsers.find((u) => u.email === email)
+  if (!user) return false
+  try {
+    localStorage.setItem(`pharmacare_pwd_override:${email}`, newPassword)
+    localStorage.removeItem(`pharmacare_reset_code:${email}`)
+  } catch {}
+  // Backend should persist password, invalidate reset code and sessions
+  return true
 }

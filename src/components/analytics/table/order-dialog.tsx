@@ -24,10 +24,11 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PredictionData } from "@/lib/analytics-data";
-import { useForm } from "react-hook-form";
+import { useZodForm } from "@/hooks/use-zod-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface OrderDialogProps {
   medication: PredictionData | null;
@@ -55,8 +56,7 @@ export function OrderDialog({
     notes: z.string().max(500).optional(),
   });
 
-  const form = useForm<{ quantity: number; provider: string; notes?: string }>({
-    resolver: zodResolver(schema),
+  const form = useZodForm<{ quantity: number; provider: string; notes?: string }>(schema, {
     defaultValues: { quantity: 0, provider: "", notes: "" },
   });
 
@@ -89,6 +89,13 @@ export function OrderDialog({
 
         <Form {...form}>
         <form className="grid gap-4 py-4" onSubmit={handleConfirmOrder}>
+          {Object.keys(form.formState.errors).length > 0 && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                Corrige los campos marcados: {Object.values(form.formState.errors).map((e) => e?.message).filter(Boolean).join(" · ")}
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <Label>Medicamento</Label>
             <div className="p-3 bg-muted rounded-lg font-medium">
@@ -107,6 +114,7 @@ export function OrderDialog({
                     <FormControl>
                       <Input id="quantity" type="number" {...field} min={1} max={1000} className="text-lg" />
                     </FormControl>
+                    <FormDescription>Entero mayor o igual a 1</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -141,6 +149,7 @@ export function OrderDialog({
                       </SelectContent>
                     </Select>
                   </FormControl>
+                  <FormDescription>Proveedor requerido para la orden</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -157,6 +166,7 @@ export function OrderDialog({
                   <FormControl>
                     <Textarea id="notes" {...field} placeholder="Agregue notas adicionales para esta orden..." rows={3} />
                   </FormControl>
+                  <FormDescription>Máximo 500 caracteres</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
