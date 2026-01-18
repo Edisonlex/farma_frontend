@@ -72,12 +72,12 @@ export function MedicationsTable({
 
   return (
     <>
-      <div className="rounded-lg border border-border/60 bg-card shadow-sm overflow-hidden">
-        <div className="relative overflow-x-auto">
+      <div className="rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden">
+        <div className="relative overflow-x-auto max-h-[60vh]">
           <Table>
-            <TableHeader className="bg-muted/40">
+            <TableHeader className="bg-muted/40 sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm">
+                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm tracking-wide">
                   <div className="flex items-center gap-2">
                     <span>Medicamento</span>
                     <svg
@@ -95,19 +95,19 @@ export function MedicationsTable({
                     </svg>
                   </div>
                 </TableHead>
-                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm">
+                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm tracking-wide">
                   Lote
                 </TableHead>
-                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm">
+                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm tracking-wide">
                   Categoría
                 </TableHead>
-                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm">
+                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm tracking-wide">
                   <div className="flex items-center gap-2">
                     <span>Stock</span>
                     <div className="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
                   </div>
                 </TableHead>
-                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm">
+                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm tracking-wide">
                   <div className="flex items-center gap-2">
                     <span>Vencimiento</span>
                     <svg
@@ -125,10 +125,10 @@ export function MedicationsTable({
                     </svg>
                   </div>
                 </TableHead>
-                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm">
+                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm tracking-wide">
                   Proveedor
                 </TableHead>
-                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm text-right">
+                <TableHead className="font-semibold text-foreground/90 py-4 px-4 text-sm text-right tracking-wide">
                   Precio
                 </TableHead>
                 <TableHead className="w-[60px] py-4 px-4">

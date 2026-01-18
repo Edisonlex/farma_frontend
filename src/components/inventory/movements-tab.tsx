@@ -86,100 +86,55 @@ export function MovementsTab() {
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Download, FileSpreadsheet, FileText, FileDown } from "lucide-react";
+import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { exportToExcel, exportToPDF } from "@/lib/export";
 
 function ExportMovements({ movements }: { movements: any[] }) {
-  const exportExcel = async () => {
-    const headers = [
-      "Medicamento",
-      "Tipo",
-      "Cantidad",
-      "Motivo",
-      "Usuario",
-      "Fecha",
-    ];
-    const rows = movements.map((m) => [
-      m.medicationName,
-      m.type,
-      m.quantity,
-      m.reason,
-      m.userName,
-      new Date(m.date).toLocaleString("es-ES"),
-    ]);
-    const XLSX = await import("xlsx");
-    const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    sheet["!cols"] = [
-      { wch: 25 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 30 },
-      { wch: 18 },
-      { wch: 20 },
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Movimientos");
-    XLSX.writeFile(wb, "movimientos.xlsx");
-  };
+  const handleExportExcel = () => {
+    const data = movements.map((m) => ({
+      Medicamento: m.medicationName,
+      Tipo: m.type,
+      Cantidad: m.quantity,
+      Motivo: m.reason,
+      Usuario: m.userName,
+      Fecha: new Date(m.date).toLocaleString("es-ES"),
+    }));
 
-  const exportCSV = () => {
-    const headers = [
-      "Medicamento",
-      "Tipo",
-      "Cantidad",
-      "Motivo",
-      "Usuario",
-      "Fecha",
-    ];
-    const rows = movements.map((m) => [
-      m.medicationName,
-      m.type,
-      m.quantity,
-      m.reason,
-      m.userName,
-      new Date(m.date).toLocaleString("es-ES"),
-    ]);
-    const csv = [headers, ...rows]
-      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "movimientos.csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const exportPDF = async () => {
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF("landscape");
-    const columns = [
-      "Medicamento",
-      "Tipo",
-      "Cantidad",
-      "Motivo",
-      "Usuario",
-      "Fecha",
-    ];
-    const rows = movements.map((m) => [
-      m.medicationName,
-      m.type,
-      m.quantity,
-      m.reason,
-      m.userName,
-      new Date(m.date).toLocaleString("es-ES"),
-    ]);
-    autoTable(doc, {
-      head: [columns],
-      body: rows,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [33, 150, 243] },
-      margin: { top: 14 },
+    exportToExcel({
+        data,
+        fileName: "movimientos",
+        sheetName: "Movimientos",
+        title: "Reporte de Movimientos de Inventario",
+        columnWidths: [25, 12, 10, 30, 18, 20],
     });
-    doc.save("movimientos.pdf");
+  };
+
+  const handleExportPDF = () => {
+    const columns = [
+      { header: "Medicamento", dataKey: "medicationName" },
+      { header: "Tipo", dataKey: "type" },
+      { header: "Cantidad", dataKey: "quantity" },
+      { header: "Motivo", dataKey: "reason" },
+      { header: "Usuario", dataKey: "userName" },
+      { header: "Fecha", dataKey: "date" },
+    ];
+
+    const data = movements.map((m) => ({
+      medicationName: m.medicationName,
+      type: m.type,
+      quantity: m.quantity,
+      reason: m.reason,
+      userName: m.userName,
+      date: new Date(m.date).toLocaleString("es-ES"),
+    }));
+
+    exportToPDF({
+        fileName: "movimientos",
+        title: "Reporte de Movimientos",
+        columns,
+        data,
+        orientation: "landscape",
+    });
   };
 
   return (
@@ -192,15 +147,11 @@ function ExportMovements({ movements }: { movements: any[] }) {
       </PopoverTrigger>
       <PopoverContent className="w-48 bg-background border-border p-2">
         <div className="space-y-1">
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={exportExcel}>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={handleExportExcel}>
             <FileSpreadsheet className="h-4 w-4" />
             Exportar a Excel
           </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={exportCSV}>
-            <FileDown className="h-4 w-4" />
-            Exportar a CSV
-          </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={exportPDF}>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={handleExportPDF}>
             <FileText className="h-4 w-4" />
             Exportar a PDF
           </Button>

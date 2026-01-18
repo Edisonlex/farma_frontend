@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { formatEcPhone, formatEcDocument } from "@/lib/utils";
 import {
   Form,
   FormField,
@@ -50,6 +52,7 @@ export function ClientDialog({
   client,
   onSave,
 }: ClientDialogProps) {
+  const [loading, setLoading] = useState(false);
   const isEditing = !!client;
   const form = useZodForm<{
     name: string;
@@ -69,6 +72,7 @@ export function ClientDialog({
     contactPerson?: string;
     website?: string;
   }>(isEditing ? ClientUpdateSchema : ClientCreateSchema, {
+    mode: "onChange",
     defaultValues: {
       name: "",
       email: "",
@@ -133,22 +137,28 @@ export function ClientDialog({
     }
   }, [client, form]);
 
-  const onSubmit = (values: any) => {
-    const clientData = {
-      ...values,
-      birthDate: values.birthDate ? new Date(values.birthDate) : null,
-    };
-    onSave(clientData);
+  const onSubmit = async (values: any) => {
+    setLoading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const clientData = {
+        ...values,
+        birthDate: values.birthDate ? new Date(values.birthDate) : null,
+      };
+      onSave(clientData);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
-        <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-xl border border-border/60 shadow-md">
+        <DialogHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b px-4 sm:px-6 py-3">
+          <DialogTitle className="text-base sm:text-lg font-semibold tracking-tight">
             {client ? "Editar Cliente" : "Nuevo Cliente"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             Documento de Ecuador (cédula 10 / RUC 13). Empresas/Instituciones
             requieren nombre y RUC/NIT. Teléfono en formato Ecuador y URL válida
             si se ingresa.
@@ -158,16 +168,15 @@ export function ClientDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 sm:space-y-6"
+            className="space-y-5 sm:space-y-6 px-4 sm:px-6 py-4"
           >
-            
             {/* Información Básica */}
             <div className="space-y-3 sm:space-y-4">
-              <h3 className="text-base sm:text-lg font-medium">
+              <h3 className="text-sm sm:text-base font-medium">
                 Información Básica
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <FormField
                   control={form.control}
                   name="type"
@@ -274,7 +283,9 @@ export function ClientDialog({
                       <FormControl>
                         <Input
                           inputMode="numeric"
-                          maxLength={form.watch("type") === "particular" ? 10 : 13}
+                          maxLength={
+                            form.watch("type") === "particular" ? 10 : 13
+                          }
                           placeholder={
                             form.watch("type") === "particular"
                               ? "Cédula 10 dígitos"
@@ -289,9 +300,9 @@ export function ClientDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        {form.watch("type") === "particular" 
-                          ? "Debe tener 10 dígitos numéricos" 
-                          : "Debe tener 13 dígitos numéricos"}
+                        {form.watch("type") === "particular"
+                          ? "Cédula: 10 dígitos numéricos (se valida algoritmo)"
+                          : "RUC: 13 dígitos numéricos (se valida algoritmo)"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -342,7 +353,9 @@ export function ClientDialog({
                                 }
                                 d = String(di).padStart(2, "0");
                               }
-                              const masked = [y, m, d].filter(Boolean).join("-");
+                              const masked = [y, m, d]
+                                .filter(Boolean)
+                                .join("-");
                               field.onChange(masked);
                             }}
                           />
@@ -378,11 +391,11 @@ export function ClientDialog({
 
             {/* Información de Contacto */}
             <div className="space-y-3 sm:space-y-4">
-              <h3 className="text-base sm:text-lg font-medium">
+              <h3 className="text-sm sm:text-base font-medium">
                 Información de Contacto
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <FormField
                   control={form.control}
                   name="email"
@@ -478,7 +491,7 @@ export function ClientDialog({
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
-                      <FormDescription>Ciudad o cantón</FormDescription>
+                      <FormDescription>Ciudad de residencia.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -498,8 +511,6 @@ export function ClientDialog({
                     </FormItem>
                   )}
                 />
-
-                
               </div>
             </div>
 
@@ -571,14 +582,3 @@ export function ClientDialog({
     </Dialog>
   );
 }
-const formatEcPhone = (v: string) => {
-  const s = v.replace(/[^0-9+]/g, "");
-  if (s.startsWith("+593")) return "+593 " + s.slice(4).replace(/\s+/g, "");
-  return s;
-};
-
-const formatEcDocument = (v: string) => {
-  const s = v.replace(/\D/g, "");
-  if (s.length <= 10) return s.slice(0, 10);
-  return s.slice(0, 13);
-};

@@ -38,7 +38,7 @@ export function MedicationsMobileView({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
-            className="rounded-md border p-4 bg-card hover:bg-muted/30 transition-colors"
+            className="rounded-lg border border-border/60 p-4 bg-card shadow-sm hover:bg-muted/30 transition-colors"
           >
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">
@@ -88,7 +88,7 @@ export function MedicationsMobileView({
               </DropdownMenu>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div>
                 <span className="text-muted-foreground">Lote:</span>
                 <Badge variant="ghost" className="ml-2 font-mono text-xs">
@@ -119,7 +119,7 @@ export function MedicationsMobileView({
                   {medication.minStock}
                 </span>
               </div>
-              <div className="col-span-2">
+              <div className="col-span-2 sm:col-span-3">
                 <span className="text-muted-foreground">Vencimiento:</span>
                 <div className="flex items-center mt-1">
                   {expiryStatus.icon && (
@@ -137,13 +137,13 @@ export function MedicationsMobileView({
                   </Badge>
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-muted-foreground">Proveedor:</span>
-                <p className="truncate text-foreground">
+                <p className="truncate text-foreground break-words">
                   {getSupplierName(medication.supplier)}
                 </p>
               </div>
-              <div>
+              <div className="sm:text-right">
                 <span className="text-muted-foreground">Precio:</span>
                 <p className="font-medium text-foreground">
                   ${medication.price.toFixed(2)}

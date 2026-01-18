@@ -1,7 +1,7 @@
 // components/management/supplier/SupplierDialog.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -37,6 +38,7 @@ import {
   SupplierSchema,
 } from "@/lib/schemas";
 import type { Supplier } from "@/lib/types";
+import { formatEcPhone } from "@/lib/utils";
 
 interface SupplierDialogProps {
   open: boolean;
@@ -61,6 +63,7 @@ export function SupplierDialog({
   supplier,
   onSave,
 }: SupplierDialogProps) {
+  const [loading, setLoading] = useState(false);
   const { addSupplier, updateSupplier } = useInventory();
   const isEditing = !!supplier;
   const form = useZodForm<{
@@ -75,6 +78,7 @@ export function SupplierDialog({
     phone?: string;
     email?: string;
   }>(isEditing ? SupplierUpdateSchema : SupplierCreateSchema, {
+    mode: "onChange",
     defaultValues: {
       nombreComercial: "",
       razonSocial: "",
@@ -138,19 +142,22 @@ export function SupplierDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-lg md:max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="w-[95vw] sm:max-w-lg md:max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl border border-border/60 shadow-md">
+        <DialogHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="text-lg sm:text-xl tracking-tight">
             {supplier ? "Editar Proveedor" : "Nuevo Proveedor"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm sm:text-base leading-relaxed">
             Valida RUC (13) para empresa o cédula (10) para persona. Teléfono
             con formato Ecuador. La fecha de registro es requerida.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 sm:space-y-6"
+          >
             {Object.keys(form.formState.errors).length > 0 && (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -202,6 +209,9 @@ export function SupplierDialog({
                   <FormControl>
                     <Input placeholder="Razón social" {...field} />
                   </FormControl>
+                  <FormDescription>
+                    Nombre legal registrado en el SRI o cédula.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -216,6 +226,9 @@ export function SupplierDialog({
                   <FormControl>
                     <Input placeholder="Nombre comercial" {...field} />
                   </FormControl>
+                  <FormDescription>
+                    Nombre con el que se identifica el negocio públicamente.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -241,7 +254,9 @@ export function SupplierDialog({
                       />
                     </FormControl>
                     <FormDescription>
-                      13 dígitos, validación automática
+                      {form.watch("tipo") === "empresa"
+                        ? "Debe ser un RUC válido de 13 dígitos (solo números)"
+                        : "Debe ser una cédula válida de 10 dígitos (solo números)"}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -267,7 +282,7 @@ export function SupplierDialog({
                       />
                     </FormControl>
                     <FormDescription>
-                      10 dígitos, validación automática
+                      Debe ser una cédula válida de 10 dígitos (solo números)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -276,30 +291,39 @@ export function SupplierDialog({
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estado *</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full border-border bg-background">
-                          <SelectValue placeholder="Selecciona estado" />
-                        </SelectTrigger>
-                        <SelectContent className="border-border bg-background">
-                          <SelectItem value="Activo">Activo</SelectItem>
-                          <SelectItem value="Inactivo">Inactivo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {isEditing ? (
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado *</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full border-border bg-background">
+                            <SelectValue placeholder="Selecciona estado" />
+                          </SelectTrigger>
+                          <SelectContent className="border-border bg-background">
+                            <SelectItem value="Activo">Activo</SelectItem>
+                            <SelectItem value="Inactivo">Inactivo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <FormItem>
+                  <FormLabel>Estado</FormLabel>
+                  <div className="text-sm px-3 py-2 rounded-md border bg-muted">
+                    Activo (por defecto)
+                  </div>
+                </FormItem>
+              )}
 
               <FormField
                 control={form.control}
@@ -346,7 +370,10 @@ export function SupplierDialog({
                               if (candidate > now) {
                                 const today = new Date();
                                 y = String(today.getFullYear());
-                                m = String(today.getMonth() + 1).padStart(2, "0");
+                                m = String(today.getMonth() + 1).padStart(
+                                  2,
+                                  "0",
+                                );
                                 di = today.getDate();
                               }
                             }
@@ -374,6 +401,9 @@ export function SupplierDialog({
                     <FormControl>
                       <Input placeholder="Nombre del contacto" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      Nombre del representante o vendedor asignado.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -427,10 +457,12 @@ export function SupplierDialog({
                 type="button"
                 variant="ghost"
                 onClick={() => onOpenChange(false)}
+                disabled={loading}
               >
                 Cancelar
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {supplier ? "Actualizar" : "Crear"} Proveedor
               </Button>
             </div>
@@ -440,8 +472,3 @@ export function SupplierDialog({
     </Dialog>
   );
 }
-const formatEcPhone = (v: string) => {
-  const s = v.replace(/[^0-9+]/g, "");
-  if (s.startsWith("+593")) return "+593 " + s.slice(4).replace(/\s+/g, "");
-  return s;
-};

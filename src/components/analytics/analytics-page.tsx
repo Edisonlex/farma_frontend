@@ -64,8 +64,10 @@ export function AnalyticsPage() {
       const predictions = generatePredictionsFromInventory(medications as any, movements as any);
       const modelInsights = getModelInsightsFromInventory(predictions);
       const riskAnalysis = getRiskAnalysis(predictions);
-      const mainMed = predictions.length > 0 ? predictions[0].medicationId : "";
-      const trendData = mainMed ? generateTrendDataFromMovements(mainMed, movements as any) : [];
+      
+      // Generar tendencia global de todos los movimientos
+      const trendData = generateTrendDataFromMovements(null, movements as any);
+      
       const seasonalityData = generateSeasonalityDataFromMovements(movements as any);
 
       setAnalyticsData({

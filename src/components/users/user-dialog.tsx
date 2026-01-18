@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UserFormCreateSchema, UserFormUpdateSchema } from "@/lib/schemas";
+import { formatEcPhone } from "@/lib/utils";
 
 interface UserDialogProps {
   open: boolean;
@@ -47,6 +49,7 @@ export function UserDialog({
   user,
   onSave,
 }: UserDialogProps) {
+  const [loading, setLoading] = useState(false);
   const isEditing = !!user;
   const form = useZodForm<{
     name: string;
@@ -58,6 +61,7 @@ export function UserDialog({
     department?: string;
     isActive: boolean;
   }>(isEditing ? UserFormUpdateSchema : UserFormCreateSchema, {
+    mode: "onChange",
     defaultValues: {
       name: "",
       email: "",
@@ -103,17 +107,22 @@ export function UserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{user ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-0 rounded-xl border border-border/60 shadow-md">
+        <DialogHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b px-4 sm:px-6 py-3">
+          <DialogTitle className="text-base sm:text-lg font-semibold tracking-tight">
+            {user ? "Editar Usuario" : "Nuevo Usuario"}
+          </DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Se validan email y contraseña (mínimo 6). Teléfono con formato de
             Ecuador. El rol seleccionado define permisos y accesos disponibles.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-5 sm:space-y-6 px-4 sm:px-6 py-4"
+          >
             {Object.keys(form.formState.errors).length > 0 && (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -130,7 +139,9 @@ export function UserDialog({
                 <p className="font-medium mb-1">Consejos</p>
                 <ul className="list-disc pl-4 space-y-1">
                   <li>Email: usuario@dominio.com</li>
-                  <li>Contraseña: mínimo 6 caracteres</li>
+                  <li>
+                    Contraseña: 8+ caracteres, Mayúscula, Minúscula, #, Símbolo
+                  </li>
                   <li>Teléfono Ecuador: +593 9XXXXXXXX / 09XXXXXXXX</li>
                 </ul>
               </div>
@@ -181,12 +192,12 @@ export function UserDialog({
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder={user ? "********" : "Mínimo 8 caracteres"}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                     Debe tener al menos 6 caracteres. Recomendado: usar números y letras.
+                    Mínimo 8 caracteres, mayúscula, minúscula, número y símbolo.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -208,7 +219,7 @@ export function UserDialog({
                       />
                     </FormControl>
                     <FormDescription>
-                      Debe coincidir con la contraseña
+                      Debe coincidir con la contraseña ingresada
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -310,22 +321,29 @@ export function UserDialog({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    El rol define permisos y accesos disponibles
+                    El rol define los permisos de acceso a los módulos del
+                    sistema.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => onOpenChange(false)}
+                disabled={loading}
               >
                 Cancelar
               </Button>
-              <Button type="submit">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {user ? "Actualizar" : "Crear"} Usuario
               </Button>
             </div>
@@ -335,8 +353,3 @@ export function UserDialog({
     </Dialog>
   );
 }
-const formatEcPhone = (v: string) => {
-  const s = v.replace(/[^0-9+]/g, "");
-  if (s.startsWith("+593")) return "+593 " + s.slice(4).replace(/\s+/g, "");
-  return s;
-};

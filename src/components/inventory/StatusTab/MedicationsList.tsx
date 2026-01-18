@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Medication } from "@/context/inventory-context";
+import type { Medication } from "@/lib/types";
 import { MedicationCard } from "./MedicationCard";
 
 interface MedicationsListProps {

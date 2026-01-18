@@ -14,10 +14,11 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { Medication } from "@/context/inventory-context";
-import { cn } from "@/lib/utils";
+import type { Medication } from "@/lib/types";
+import { cn, getDefaultImageForName } from "@/lib/utils";
 import StockAdjustDialog from "@/components/inventory/adjustments/StockAdjustDialog";
 import { MedicationDetailDialog } from "@/components/medications/medication-detail-dialog";
+import Image from "next/image";
 
 interface MedicationCardProps {
   medication: Medication;
@@ -88,15 +89,25 @@ export function MedicationCard({
         "transition-all duration-200",
         expiringSoon && "border-amber-200 bg-amber-50/50 dark:bg-amber-950/20",
         medication.quantity === 0 && "border-destructive/20 bg-destructive/5",
-        isExpanded && "ring-2 ring-primary/20"
+        isExpanded && "ring-2 ring-primary/20",
       )}
     >
       <CardContent className="p-4 md:p-6">
         {/* Header - Visible siempre */}
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-              <Package className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-border shrink-0">
+              <Image
+                src={
+                  medication.imageUrl || getDefaultImageForName(medication.name)
+                }
+                alt={medication.name}
+                fill
+                className="object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = getDefaultImageForName(medication.name);
+                }}
+              />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -182,7 +193,7 @@ export function MedicationCard({
                 <p
                   className={cn(
                     "font-medium",
-                    expiringSoon ? "text-amber-600" : ""
+                    expiringSoon ? "text-amber-600" : "",
                   )}
                 >
                   {formatDate(medication.expiryDate)}
@@ -198,17 +209,31 @@ export function MedicationCard({
             </div>
 
             <div className="mt-4 flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setShowAdjust(true)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdjust(true)}
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Ajustar Stock
               </Button>
-              <Button size="sm" onClick={() => setShowDetail(true)}>Ver Detalles</Button>
+              <Button size="sm" onClick={() => setShowDetail(true)}>
+                Ver Detalles
+              </Button>
             </div>
           </div>
         )}
       </CardContent>
-      <StockAdjustDialog open={showAdjust} onOpenChange={setShowAdjust} medicationId={medication.id.toString()} />
-      <MedicationDetailDialog medication={medication} open={showDetail} onOpenChange={setShowDetail} />
+      <StockAdjustDialog
+        open={showAdjust}
+        onOpenChange={setShowAdjust}
+        medicationId={medication.id.toString()}
+      />
+      <MedicationDetailDialog
+        medication={medication}
+        open={showDetail}
+        onOpenChange={setShowDetail}
+      />
     </Card>
   );
 }

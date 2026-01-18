@@ -1,7 +1,7 @@
 // components/management/category/CategoryDialog.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +41,7 @@ export function CategoryDialog({
   category,
   onSave,
 }: CategoryDialogProps) {
+  const [loading, setLoading] = useState(false);
   const { addCategory, updateCategory } = useInventory();
   const isEditing = !!category;
   const form = useZodForm<{ name: string; description?: string }>(
@@ -63,13 +65,19 @@ export function CategoryDialog({
     }
   }, [category, open, form]);
 
-  const onSubmit = (values: any) => {
-    if (category) {
-      updateCategory(category.id, values);
-    } else {
-      addCategory(values);
+  const onSubmit = async (values: any) => {
+    setLoading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (category) {
+        updateCategory(category.id, values);
+      } else {
+        addCategory(values);
+      }
+      onSave(values);
+    } finally {
+      setLoading(false);
     }
-    onSave(values);
   };
 
   return (
@@ -135,7 +143,9 @@ export function CategoryDialog({
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>Máximo 500 caracteres</FormDescription>
+                  <FormDescription>
+                    Detalles adicionales sobre el tipo de productos (máx. 500 caracteres).
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -146,10 +156,12 @@ export function CategoryDialog({
                 type="button"
                 variant="ghost"
                 onClick={() => onOpenChange(false)}
+                disabled={loading}
               >
                 Cancelar
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {category ? "Actualizar" : "Crear"} Categoría
               </Button>
             </div>

@@ -66,7 +66,6 @@ export function ReportPreview({
 
     switch (type) {
       case "inventory":
-      case "expiring":
       case "expired":
       case "low-stock":
         return (
@@ -89,14 +88,7 @@ export function ReportPreview({
                 <div className="text-xs text-muted-foreground">Stock Bajo</div>
               </div>
             )}
-            {data.summary?.expiringCount !== undefined && (
-              <div className="text-center p-3 bg-muted rounded-lg">
-                <div className="text-2xl font-bold text-amber-600">
-                  {data.summary.expiringCount}
-                </div>
-                <div className="text-xs text-muted-foreground">Por Vencer</div>
-              </div>
-            )}
+            {/* Tarjeta "Por Vencer" eliminada a solicitud del usuario */}
           </div>
         );
 

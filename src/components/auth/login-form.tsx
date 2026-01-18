@@ -53,6 +53,7 @@ export function LoginForm() {
   const form = useZodForm<{ email: string; password: string }>(
     LoginFormSchema,
     {
+      mode: "onChange",
       defaultValues: { email: "", password: "" },
     }
   );
@@ -478,7 +479,16 @@ function ResetCodeStep({
 }
 
 const ResetPasswordSchema = z
-  .object({ password: z.string().min(6), confirm: z.string().min(6) })
+  .object({
+    password: z
+      .string()
+      .min(8, "Mínimo 8 caracteres")
+      .regex(/[A-Z]/, "Debe tener una mayúscula")
+      .regex(/[a-z]/, "Debe tener una minúscula")
+      .regex(/[0-9]/, "Debe tener un número")
+      .regex(/[^A-Za-z0-9]/, "Debe tener un carácter especial"),
+    confirm: z.string(),
+  })
   .refine((data) => data.password === data.confirm, {
     message: "Las contraseñas deben coincidir",
     path: ["confirm"],
@@ -509,11 +519,13 @@ function ResetPasswordStep({
               <FormControl>
                 <Input
                   type="password"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres, mayúscula, especial..."
                   {...field}
                 />
               </FormControl>
-              <FormDescription>Mínimo 6 caracteres</FormDescription>
+              <FormDescription>
+                Mínimo 8 caracteres, mayúscula, minúscula, número y especial
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

@@ -21,6 +21,8 @@ import {
   Sparkles,
   Tags,
   Truck,
+  FileSpreadsheet,
+  Building2,
 } from "lucide-react";
 import { getInventoryAnalytics } from "@/lib/mock-data";
 import { useAuth } from "@/hooks/use-auth";
@@ -74,7 +76,7 @@ export default function QuickActions() {
     {
       title: "Generar Reportes",
       description: "Reportes en PDF y Excel",
-      icon: FileText,
+      icon: FileSpreadsheet,
       color: "bg-secondary",
       gradient: "from-secondary to-secondary/80",
       permission: "generate_reports",
@@ -114,9 +116,9 @@ export default function QuickActions() {
     {
       title: "Gestionar Proveedores",
       description: "Administrar proveedores de medicamentos",
-      icon: Truck,
-      color: "bg-chart-6",
-      gradient: "from-chart-6 to-chart-6/80",
+      icon: Building2,
+      color: "bg-indigo-500",
+      gradient: "from-indigo-500 to-indigo-600",
       permission: "manage_suppliers",
       roles: ["administrador"],
       href: "/proveedores",

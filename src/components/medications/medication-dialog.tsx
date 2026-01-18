@@ -28,7 +28,7 @@ import {
 import { CalendarIcon, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, getDefaultImageForName } from "@/lib/utils";
 import type { Medication } from "@/lib/types";
 import { useInventory } from "@/context/inventory-context";
 import { CategoryDialog } from "../management/CategoryDialog";
@@ -243,6 +243,9 @@ export function MedicationDialog({
                       <FormControl>
                         <Input placeholder="ej. Paracetamol 500mg" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Nombre comercial completo incluyendo concentración.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -381,7 +384,7 @@ export function MedicationDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        Número entero mayor o igual a 0
+                        Stock físico actual (unidades)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -405,7 +408,7 @@ export function MedicationDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        Umbral mínimo para alertas de stock
+                        Alerta si stock &lt; este valor
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -452,7 +455,7 @@ export function MedicationDialog({
                             variant="ghost"
                             className={cn(
                               "w-full justify-start text-left font-normal",
-                              !field.value && "text-muted-foreground"
+                              !field.value && "text-muted-foreground",
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -463,12 +466,17 @@ export function MedicationDialog({
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[320px] min-w-[320px] p-0 border-border bg-background">
+                        <PopoverContent className="w-auto p-0 border-border bg-background">
                           <Calendar
                             mode="single"
                             selected={field.value}
                             onSelect={(date) => date && field.onChange(date)}
-                            initialFocus
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
+                            captionLayout="dropdown"
+                            fromYear={new Date().getFullYear()}
+                            toYear={new Date().getFullYear() + 10}
                           />
                         </PopoverContent>
                       </Popover>
@@ -544,12 +552,15 @@ export function MedicationDialog({
                   <img
                     src={
                       form.watch("imageUrl") ||
-                      `https://picsum.photos/seed/${encodeURIComponent(
-                        form.watch("name") || "med"
-                      )}/120/120`
+                      getDefaultImageForName(form.watch("name") || "")
                     }
                     alt="Vista previa"
                     className="w-24 h-24 rounded-md object-cover border border-border/40"
+                    onError={(e) => {
+                      e.currentTarget.src = `https://picsum.photos/seed/${encodeURIComponent(
+                        form.watch("name") || "med",
+                      )}/120/120`;
+                    }}
                   />
                 </div>
               </div>

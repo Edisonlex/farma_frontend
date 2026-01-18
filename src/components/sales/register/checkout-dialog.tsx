@@ -93,6 +93,7 @@ export function CheckoutDialog({
   }, [total]);
 
   const form = useZodForm(schema, {
+    mode: "onChange",
     defaultValues: {
       method: paymentMethod,
       cashReceived: "",

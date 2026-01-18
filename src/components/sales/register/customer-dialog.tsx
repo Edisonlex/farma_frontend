@@ -129,6 +129,9 @@ export function CustomerDialog({
                       {...field}
                     />
                   </FormControl>
+                  <FormDescription>
+                    Para envío de comprobantes electrónicos.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

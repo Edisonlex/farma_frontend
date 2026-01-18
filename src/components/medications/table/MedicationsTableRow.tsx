@@ -69,9 +69,9 @@ export function MedicationsTableRow({
       transition={{ duration: 0.25, delay: index * 0.03 }}
       className="group hover:bg-muted/20 transition-all duration-200 border-b border-border/40"
     >
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-3.5 px-4">
         <div className="flex items-start gap-3">
-          <Avatar className="size-8">
+          <Avatar className="size-9 ring-1 ring-border/40">
             <AvatarImage
               src={
                 medication.imageUrl ||
@@ -96,25 +96,25 @@ export function MedicationsTableRow({
         </div>
       </TableCell>
 
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-3.5 px-4">
         <Badge
           variant="ghost"
-          className="font-mono text-xs bg-secondary/30 border-border/50 text-foreground/80"
+          className="font-mono text-[11px] bg-secondary/30 border border-border/50 text-foreground/80 px-2"
         >
           {medication.batch}
         </Badge>
       </TableCell>
 
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-3.5 px-4">
         <Badge
           variant="secondary"
-          className="text-xs bg-primary/10 text-primary hover:bg-primary/15 border-0"
+          className="text-xs bg-primary/10 text-primary hover:bg-primary/15 border-0 px-2"
         >
           {getCategoryName(medication.category)}
         </Badge>
       </TableCell>
 
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-3.5 px-4">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-foreground/90 text-sm">
@@ -134,7 +134,7 @@ export function MedicationsTableRow({
         </div>
       </TableCell>
 
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-3.5 px-4">
         <div className="flex items-center gap-2">
           {expiryStatus.status === "vencido" && (
             <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
@@ -151,13 +151,13 @@ export function MedicationsTableRow({
         </div>
       </TableCell>
 
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-3.5 px-4">
         <span className="text-sm text-foreground/85 font-medium">
           {getSupplierName(medication.supplier)}
         </span>
       </TableCell>
 
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-3.5 px-4">
         <div className="text-right">
           <span className="font-semibold text-foreground/90">
             ${medication.price.toFixed(2)}
@@ -165,7 +165,7 @@ export function MedicationsTableRow({
         </div>
       </TableCell>
 
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-3.5 px-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

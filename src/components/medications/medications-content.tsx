@@ -29,7 +29,7 @@ interface MedicationsContentProps {
   setDialogOpen: (open: boolean) => void;
   editingMedication: Medication | null;
   handleSaveMedication: (
-    medication: Medication | Omit<Medication, "id">
+    medication: Medication | Omit<Medication, "id">,
   ) => void;
 }
 
@@ -74,12 +74,12 @@ export function MedicationsContent({
       )}
 
       {/* Medications Table */}
-      <Card className="overflow-x-auto">
-        <CardHeader className="px-4 py-3 sm:px-6 sm:py-4">
-          <CardTitle className="text-lg sm:text-xl">
+      <Card className="overflow-x-auto border border-border/60 shadow-md rounded-xl">
+        <CardHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <CardTitle className="text-lg sm:text-xl tracking-tight">
             Lista de Medicamentos
           </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
+          <CardDescription className="text-sm sm:text-base leading-relaxed">
             Gestiona el inventario completo de medicamentos.
             {canViewInventory && (
               <>
@@ -87,7 +87,7 @@ export function MedicationsContent({
                 Para control de stock y movimientos, visita{" "}
                 <Link
                   href="/inventario"
-                  className="text-primary hover:underline"
+                  className="text-primary hover:underline font-medium"
                 >
                   Control de Inventario
                 </Link>
@@ -97,7 +97,7 @@ export function MedicationsContent({
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="min-w-[600px] sm:min-w-0">
+          <div className="min-w-0">
             <MedicationsTable
               medications={filteredMedications}
               onEdit={canManage ? openEditDialog : undefined}

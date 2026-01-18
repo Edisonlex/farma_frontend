@@ -77,72 +77,74 @@ export function MedicationFilters({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Category Filter */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <label className="text-sm font-medium text-foreground">
-              Categoría
-            </label>
-          </div>
-          <Select value={selectedCategory} onValueChange={onCategoryChange}>
-            <SelectTrigger className="bg-background border-border/70 hover:border-border transition-colors">
-              <SelectValue placeholder="Selecciona una categoría" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border-border/70">
-              <SelectItem value="all" className="focus:bg-accent">
-                <div className="flex justify-between items-center w-full">
-                  <span>Todas las categorías</span>
-                  <Badge variant="ghost" className="ml-2">
-                    {getCategoryCount("all")}
-                  </Badge>
-                </div>
-              </SelectItem>
-              {categories.map((category) => (
-                <SelectItem
-                  key={category}
-                  value={category}
-                  className="focus:bg-accent"
-                >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Category Filter */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <label className="text-sm font-medium text-foreground">
+                Categoría
+              </label>
+            </div>
+            <Select value={selectedCategory} onValueChange={onCategoryChange}>
+              <SelectTrigger className="bg-background border-border/70 hover:border-border transition-colors">
+                <SelectValue placeholder="Selecciona una categoría" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border/70">
+                <SelectItem value="all" className="focus:bg-accent">
                   <div className="flex justify-between items-center w-full">
-                    <span className="capitalize">{getCategoryName(category)}</span>
+                    <span>Todas las categorías</span>
                     <Badge variant="ghost" className="ml-2">
-                      {getCategoryCount(category)}
+                      {getCategoryCount("all")}
                     </Badge>
                   </div>
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Status Filter (example of additional filter) */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <TestTube className="w-4 h-4 text-muted-foreground" />
-            <label className="text-sm font-medium text-foreground">
-              Estado
-            </label>
+                {categories.map((category) => (
+                  <SelectItem
+                    key={category}
+                    value={category}
+                    className="focus:bg-accent"
+                  >
+                    <div className="flex justify-between items-center w-full">
+                      <span className="capitalize">{getCategoryName(category)}</span>
+                      <Badge variant="ghost" className="ml-2">
+                        {getCategoryCount(category)}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select defaultValue="all">
-            <SelectTrigger className="bg-background border-border/70 hover:border-border transition-colors">
-              <SelectValue placeholder="Selecciona un estado" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border-border/70">
-              <SelectItem value="all" className="focus:bg-accent">
-                Todos los estados
-              </SelectItem>
-              {statuses.map((status) => (
-                <SelectItem
-                  key={status}
-                  value={status.toLowerCase()}
-                  className="focus:bg-accent"
-                >
-                  {status}
+
+          {/* Status Filter (example of additional filter) */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <TestTube className="w-4 h-4 text-muted-foreground" />
+              <label className="text-sm font-medium text-foreground">
+                Estado
+              </label>
+            </div>
+            <Select defaultValue="all">
+              <SelectTrigger className="bg-background border-border/70 hover:border-border transition-colors">
+                <SelectValue placeholder="Selecciona un estado" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border/70">
+                <SelectItem value="all" className="focus:bg-accent">
+                  Todos los estados
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {statuses.map((status) => (
+                  <SelectItem
+                    key={status}
+                    value={status.toLowerCase()}
+                    className="focus:bg-accent"
+                  >
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Active Filters */}

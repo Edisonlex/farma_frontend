@@ -288,7 +288,7 @@ export const mockMedications: Medication[] = [
     activeIngredient: "Paracetamol",
     price: 2.5,
     location: "A1-B2",
-    imageUrl: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=200&h=200&fit=crop"
+    imageUrl: "/Paracetamol 500mg.png"
   },
   {
     id: "2",
@@ -302,7 +302,7 @@ export const mockMedications: Medication[] = [
     activeIngredient: "Ibuprofeno",
     price: 3.75,
     location: "A2-C1",
-    imageUrl: "https://images.unsplash.com/photo-1584305574643-0ae9ce7d4926?w=200&h=200&fit=crop"
+    imageUrl: "/ofeno 400mg.jpg"
   },
   {
     id: "3",
@@ -316,7 +316,7 @@ export const mockMedications: Medication[] = [
     activeIngredient: "Amoxicilina",
     price: 5.2,
     location: "B1-A3",
-    imageUrl: "https://images.unsplash.com/photo-1608138419010-b8f31135b9c2?w=200&h=200&fit=crop"
+    imageUrl: "/Amoxicilina 250mg.jpg"
   },
   {
     id: "4",
@@ -330,7 +330,7 @@ export const mockMedications: Medication[] = [
     activeIngredient: "Omeprazol",
     price: 4.1,
     location: "C1-B1",
-    imageUrl: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=200&h=200&fit=crop"
+    imageUrl: "/Omeprazol 20mg.png"
   },
   {
     id: "5",
@@ -344,7 +344,7 @@ export const mockMedications: Medication[] = [
     activeIngredient: "Loratadina",
     price: 1.8,
     location: "D1-A2",
-    imageUrl: "https://images.unsplash.com/photo-1581608198711-b7a0c3c0f0c5?w=200&h=200&fit=crop"
+    imageUrl: "/Loratadina 10mg.png"
   },
   {
     id: "6",
@@ -358,7 +358,7 @@ export const mockMedications: Medication[] = [
     activeIngredient: "Cetirizina",
     price: 1.8,
     location: "D1-A2",
-    imageUrl: "https://images.unsplash.com/photo-1581608198711-b7a0c3c0f0c5?w=200&h=200&fit=crop"
+    imageUrl: "/Cetirizina 10mg.png"
   },
   {
     id: "11",

@@ -58,6 +58,7 @@ export function MovementDialog({ open, onOpenChange }: MovementDialogProps) {
     reason: string;
     batch: string;
   }>(InventoryMovementFormSchema, {
+    mode: "onChange",
     defaultValues: {
       type: undefined as any,
       medicationId: "",

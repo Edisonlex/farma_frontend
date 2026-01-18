@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Download } from "lucide-react";
+import { Package, ChevronLeft, ChevronRight } from "lucide-react";
 import { TransactionCard } from "./TransactionCard";
 
 interface TransactionsListProps {
@@ -16,6 +17,35 @@ export function TransactionsList({
   hasActiveFilters,
   onClearFilters,
 }: TransactionsListProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
+
+  // Reset page when transactions change (e.g. filters applied)
+  if (currentPage > Math.ceil(transactions.length / itemsPerPage) && transactions.length > 0) {
+     setCurrentPage(1);
+  }
+
+  const totalPages = Math.ceil(transactions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentTransactions = transactions.slice(startIndex, startIndex + itemsPerPage);
+
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   if (transactions.length === 0) {
     return (
       <Card>
@@ -45,16 +75,41 @@ export function TransactionsList({
 
   return (
     <div className="space-y-4">
-      {transactions.map((transaction) => (
+      {currentTransactions.map((transaction) => (
         <TransactionCard key={transaction.id} transaction={transaction} />
       ))}
 
-      {transactions.length > 10 && (
-        <div className="flex justify-center">
-          <Button variant="ghost" className="gap-2">
-            <Download className="h-4 w-4" />
-            Cargar más transacciones
-          </Button>
+      {/* Pagination Controls */}
+      {transactions.length > itemsPerPage && (
+        <div className="flex items-center justify-between pt-4 border-t border-border/50">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {startIndex + 1} - {Math.min(startIndex + itemsPerPage, transactions.length)} de {transactions.length} transacciones
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={prevPage}
+              disabled={currentPage === 1}
+              className="gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Anterior
+            </Button>
+            <div className="text-sm font-medium mx-2">
+              Página {currentPage} de {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={nextPage}
+              disabled={currentPage === totalPages}
+              className="gap-1"
+            >
+              Siguiente
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

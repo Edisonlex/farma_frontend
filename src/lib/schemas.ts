@@ -1,10 +1,15 @@
 import { z } from "zod";
+import { isValidCedula, isValidRuc, isValidEcuadorDocument } from "./utils";
 
 export const MedicationSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
   batch: z.string().min(1),
-  expiryDate: z.date(),
+  expiryDate: z
+    .date()
+    .refine((date) => date >= new Date(new Date().setHours(0, 0, 0, 0)), {
+      message: "La fecha de vencimiento no puede ser anterior a hoy",
+    }),
   quantity: z.number().int().min(0),
   minStock: z.number().int().min(0),
   supplier: z.string().min(1),
@@ -12,6 +17,7 @@ export const MedicationSchema = z.object({
   activeIngredient: z.string().optional(),
   price: z.number().min(0),
   location: z.string().optional(),
+  imageUrl: z.string().url().optional().or(z.literal("")),
   lastUpdated: z.date().optional(),
 });
 
@@ -81,9 +87,9 @@ const SupplierBaseSchema = z.object({
       (v) =>
         !v ||
         /^(?:\+593(?:[2-7]\d{7}|9\d{8})|0[2-7]\d{7}|09\d{8})$/.test(
-          v.replace(/[\s-]/g, "")
+          v.replace(/[\s-]/g, ""),
         ),
-      { message: "Teléfono de Ecuador inválido" }
+      { message: "Teléfono de Ecuador inválido" },
     ),
   email: z.string().email().optional(),
 });
@@ -111,6 +117,13 @@ export const SupplierSchema = SupplierBaseSchema.superRefine((val, ctx) => {
 export const SupplierCreateSchema = SupplierBaseSchema.omit({
   id: true,
 }).superRefine((val, ctx) => {
+  if (val.status !== "Activo") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["status"],
+      message: "Al crear, el proveedor debe estar Activo",
+    });
+  }
   if (val.tipo === "empresa") {
     if (!val.ruc || !val.ruc.trim()) {
       ctx.addIssue({
@@ -172,14 +185,14 @@ export const CustomerSchema = CustomerBaseSchema.refine(
   {
     message: "Documento de Ecuador inválido (cédula/RUC)",
     path: ["document"],
-  }
+  },
 );
 export const CustomerFormSchema = CustomerBaseSchema.partial().refine(
   (v) => !v.document || isValidEcuadorDocument(v.document),
   {
     message: "Documento de Ecuador inválido (cédula/RUC)",
     path: ["document"],
-  }
+  },
 );
 
 export const SaleSchema = z.object({
@@ -283,7 +296,10 @@ export const SystemConfigSchema = z.object({
   companyName: z.string().min(1, { message: "El nombre es requerido" }),
   companyAddress: z.string().min(1, { message: "La dirección es requerida" }),
   companyPhone: z.string().min(1, { message: "El teléfono es requerido" }),
-  companyEmail: z.string().email({ message: "Email inválido" }).or(z.literal("")),
+  companyEmail: z
+    .string()
+    .email({ message: "Email inválido" })
+    .or(z.literal("")),
   timezone: z.string(),
   language: z.string(),
   currency: z.string(),
@@ -293,7 +309,7 @@ export const SystemConfigSchema = z.object({
   autoBackup: z.boolean(),
   backupFrequency: z.string(),
   maxBackups: z.number().int().min(0),
-  
+
   // UI fields
   systemName: z.string().optional(),
   systemVersion: z.string().optional(),
@@ -361,8 +377,14 @@ export const UserFormCreateSchema = z
     name: z.string().min(1),
     email: z.string().email(),
     role: UserRoleSchema,
-    password: z.string().min(6),
-    confirmPassword: z.string().min(6),
+    password: z
+      .string()
+      .min(8, "Mínimo 8 caracteres")
+      .regex(/[A-Z]/, "Debe tener una mayúscula")
+      .regex(/[a-z]/, "Debe tener una minúscula")
+      .regex(/[0-9]/, "Debe tener un número")
+      .regex(/[^A-Za-z0-9]/, "Debe tener un carácter especial"),
+    confirmPassword: z.string(),
     phone: z
       .string()
       .optional()
@@ -370,9 +392,9 @@ export const UserFormCreateSchema = z
         (v) =>
           !v ||
           /^(?:\+593(?:[2-7]\d{7}|9\d{8})|0[2-7]\d{7}|09\d{8})$/.test(
-            v.replace(/[\s-]/g, "")
+            v.replace(/[\s-]/g, ""),
           ),
-        { message: "Teléfono de Ecuador inválido" }
+        { message: "Teléfono de Ecuador inválido" },
       ),
     department: z.string().optional(),
     isActive: z.boolean(),
@@ -392,7 +414,14 @@ export const UserFormUpdateSchema = z
     name: z.string().min(1),
     email: z.string().email(),
     role: UserRoleSchema,
-    password: z.string().min(6).optional(),
+    password: z
+      .string()
+      .min(8, "Mínimo 8 caracteres")
+      .regex(/[A-Z]/, "Debe tener una mayúscula")
+      .regex(/[a-z]/, "Debe tener una minúscula")
+      .regex(/[0-9]/, "Debe tener un número")
+      .regex(/[^A-Za-z0-9]/, "Debe tener un carácter especial")
+      .optional(),
     confirmPassword: z.string().optional(),
     phone: z
       .string()
@@ -401,9 +430,9 @@ export const UserFormUpdateSchema = z
         (v) =>
           !v ||
           /^(?:\+593(?:[2-7]\d{7}|9\d{8})|0[2-7]\d{7}|09\d{8})$/.test(
-            v.replace(/[\s-]/g, "")
+            v.replace(/[\s-]/g, ""),
           ),
-        { message: "Teléfono de Ecuador inválido" }
+        { message: "Teléfono de Ecuador inválido" },
       ),
     department: z.string().optional(),
     isActive: z.boolean(),
@@ -449,6 +478,42 @@ export const createAdjustStockFormSchema = (available: number) =>
     }
   });
 
+export const SupplierReturnSchema = z.object({
+  medicationId: z.string().min(1, { message: "Selecciona un medicamento" }),
+  type: z.enum(["expired", "defective", "error", "recall"], {
+    errorMap: () => ({ message: "Selecciona el tipo de devolución" }),
+  }),
+  quantity: z.coerce
+    .number()
+    .int()
+    .min(1, { message: "Cantidad debe ser mayor a 0" }),
+  reason: z.string().optional(),
+});
+
+export const createSupplierReturnSchema = (available: number) =>
+  SupplierReturnSchema.superRefine((val, ctx) => {
+    if (val.quantity > available) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["quantity"],
+        message: `No hay suficiente stock. Disponible: ${available}`,
+      });
+    }
+  });
+
+export const CustomerReturnSchema = z.object({
+  medicationId: z.string().min(1, { message: "Selecciona un medicamento" }),
+  quantity: z.coerce
+    .number()
+    .int()
+    .min(1, { message: "Cantidad debe ser mayor a 0" }),
+  invoice: z.string().min(1, { message: "Número de factura requerido" }),
+  condition: z.boolean().refine((val) => val === true, {
+    message: "El producto debe estar sellado e intacto",
+  }),
+  reason: z.string().optional(),
+});
+
 export const ClientTypeSchema = z.enum([
   "particular",
   "empresa",
@@ -466,9 +531,9 @@ export const ClientBaseSchema = z.object({
       (v) =>
         !v ||
         /^(?:\+593(?:[2-7]\d{7}|9\d{8})|0[2-7]\d{7}|09\d{8})$/.test(
-          v.replace(/[\s-]/g, "")
+          v.replace(/[\s-]/g, ""),
         ),
-      { message: "Teléfono de Ecuador inválido" }
+      { message: "Teléfono de Ecuador inválido" },
     ),
   document: z.string().refine((v) => isValidEcuadorDocument(v), {
     message: "Documento de Ecuador inválido (cédula/RUC)",
@@ -563,62 +628,3 @@ export const LoginFormSchema = z.object({
   email: z.string().email({ message: "Email inválido" }),
   password: z.string().min(6, { message: "Mínimo 6 caracteres" }),
 });
-
-function isValidEcuadorDocument(input: string) {
-  const s = input.replace(/[^0-9]/g, "");
-  if (s.length === 10) return isValidCedula(s);
-  if (s.length === 13) return isValidRuc(s);
-  return false;
-}
-
-function isValidCedula(id: string) {
-  if (!/^[0-9]{10}$/.test(id)) return false;
-  const prov = parseInt(id.slice(0, 2), 10);
-  if (prov < 1 || prov > 24) return false;
-  const third = parseInt(id[2], 10);
-  if (third < 0 || third > 5) return false;
-  const coeff = [2, 1, 2, 1, 2, 1, 2, 1, 2];
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    let p = parseInt(id[i], 10) * coeff[i];
-    if (p >= 10) p -= 9;
-    sum += p;
-  }
-  const mod = sum % 10;
-  const check = mod === 0 ? 0 : 10 - mod;
-  return check === parseInt(id[9], 10);
-}
-
-function isValidRuc(ruc: string) {
-  if (!/^[0-9]{13}$/.test(ruc)) return false;
-  const prov = parseInt(ruc.slice(0, 2), 10);
-  if (prov < 1 || prov > 24) return false;
-  const third = parseInt(ruc[2], 10);
-  if (third >= 0 && third <= 5) {
-    const base = ruc.slice(0, 10);
-    if (!isValidCedula(base)) return false;
-    const suf = parseInt(ruc.slice(10), 10);
-    return suf >= 1;
-  }
-  if (third === 9) {
-    const coeff = [4, 3, 2, 7, 6, 5, 4, 3, 2];
-    let sum = 0;
-    for (let i = 0; i < 9; i++) sum += parseInt(ruc[i], 10) * coeff[i];
-    const mod = sum % 11;
-    const check = mod === 0 ? 0 : 11 - mod;
-    if (check !== parseInt(ruc[9], 10)) return false;
-    const suf = parseInt(ruc.slice(10), 10);
-    return suf >= 1;
-  }
-  if (third === 6) {
-    const coeff = [3, 2, 7, 6, 5, 4, 3, 2];
-    let sum = 0;
-    for (let i = 0; i < 8; i++) sum += parseInt(ruc[i], 10) * coeff[i];
-    const mod = sum % 11;
-    const check = mod === 0 ? 0 : 11 - mod;
-    if (check !== parseInt(ruc[8], 10)) return false;
-    const suf = parseInt(ruc.slice(9), 10);
-    return suf >= 1;
-  }
-  return false;
-}

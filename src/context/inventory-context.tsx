@@ -17,6 +17,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { getDefaultImageForName } from "@/lib/utils";
 import {
   MedicationCreateSchema,
   MedicationUpdateSchema,
@@ -28,23 +29,6 @@ import {
   SupplierSchema,
   SupplierUpdateSchema,
 } from "@/lib/schemas";
-
-const defaultImageForName = (name: string) => {
-  const key = (name || "").toLowerCase();
-  if (key.includes("paracetamol"))
-    return "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=200&h=200&fit=crop";
-  if (key.includes("ibuprofeno"))
-    return "https://images.unsplash.com/photo-1584305574643-0ae9ce7d4926?w=200&h=200&fit=crop";
-  if (key.includes("amoxicilina") || key.includes("azitro"))
-    return "https://images.unsplash.com/photo-1608138419010-b8f31135b9c2?w=200&h=200&fit=crop";
-  if (key.includes("omeprazol"))
-    return "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=200&h=200&fit=crop";
-  if (key.includes("loratadina") || key.includes("cetirizina"))
-    return "https://images.unsplash.com/photo-1581608198711-b7a0c3c0f0c5?w=200&h=200&fit=crop";
-  if (key.includes("insulina"))
-    return "https://images.unsplash.com/photo-1551198290-dcf8a5d4f130?w=200&h=200&fit=crop";
-  return `https://picsum.photos/seed/${encodeURIComponent(name || "med")}/200`;
-};
 
 interface InventoryContextType {
   medications: Medication[];
@@ -121,12 +105,19 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       const catsJson = localStorage.getItem("pharmacy-inventory-categories");
       const supsJson = localStorage.getItem("pharmacy-inventory-suppliers");
       if (medsJson) {
-        const parsed = JSON.parse(medsJson).map((m: any) => ({
-          ...m,
-          expiryDate: new Date(m.expiryDate),
-          lastUpdated: m.lastUpdated ? new Date(m.lastUpdated) : undefined,
-          imageUrl: m.imageUrl || defaultImageForName(m.name),
-        }));
+        const parsed = JSON.parse(medsJson).map((m: any) => {
+          // Force update local images if name matches
+          const localImage = getDefaultImageForName(m.name);
+          const isLocal = localImage.startsWith("/");
+          
+          return {
+            ...m,
+            expiryDate: new Date(m.expiryDate),
+            lastUpdated: m.lastUpdated ? new Date(m.lastUpdated) : undefined,
+            // Prioritize local image if available, otherwise keep existing or use default
+            imageUrl: isLocal ? localImage : (m.imageUrl || localImage),
+          };
+        });
         setMedications(parsed);
       }
       if (catsJson) {
@@ -175,7 +166,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const newMedication: Medication = {
       ...v.data,
       id: Date.now().toString(),
-      imageUrl: v.data.imageUrl || defaultImageForName(v.data.name),
+      imageUrl: v.data.imageUrl || getDefaultImageForName(v.data.name),
     };
 
     const newMovement: InventoryMovement = {

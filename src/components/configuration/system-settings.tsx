@@ -51,6 +51,7 @@ export function SystemSettings() {
   const [isSaving, setIsSaving] = useState(false);
 
   const form = useZodForm(SystemConfigSchema, {
+    mode: "onChange",
     defaultValues: settings,
   });
 
@@ -210,6 +211,9 @@ export function SystemSettings() {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Nombre visible en reportes y cabeceras.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -252,6 +256,9 @@ export function SystemSettings() {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Ubicación física de la farmacia.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

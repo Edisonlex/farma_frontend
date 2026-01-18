@@ -146,7 +146,23 @@ export function ProductSearch({
             >
               <div className="flex-1">
                 <div className="flex items-start gap-3">
-                  <img src={medication.imageUrl || `https://picsum.photos/seed/${encodeURIComponent(medication.name)}/64/64`} alt={medication.name} className="w-10 h-10 rounded-md object-cover" />
+                  <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted">
+                    <img
+                      src={
+                        medication.imageUrl ||
+                        `https://picsum.photos/seed/${encodeURIComponent(
+                          medication.name
+                        )}/64/64`
+                      }
+                      alt={medication.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://picsum.photos/seed/${encodeURIComponent(
+                          medication.name
+                        )}/64/64`;
+                      }}
+                    />
+                  </div>
                   <div>
                     <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                       {medication.name}

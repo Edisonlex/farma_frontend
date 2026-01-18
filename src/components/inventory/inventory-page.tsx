@@ -15,10 +15,13 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 
+import { ReturnsDialog } from "./returns/ReturnsDialog";
+
 export function InventoryPage() {
-  const { medications, processSupplierReturns } = useInventory();
+  const { medications } = useInventory();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("current");
+  const [showReturnsDialog, setShowReturnsDialog] = useState(false);
 
   useEffect(() => {
     const t = searchParams.get("tab");
@@ -58,16 +61,18 @@ export function InventoryPage() {
           <Button
             variant="ghost"
             className="gap-2"
-            onClick={() => {
-              if (confirm("¿Procesar devoluciones a proveedor para productos ya vencidos?")) {
-                processSupplierReturns();
-              }
-            }}
+            onClick={() => setShowReturnsDialog(true)}
           >
             <RefreshCw className="w-4 h-4" />
             Gestionar Devoluciones
           </Button>
         </div>
+        
+        <ReturnsDialog 
+          open={showReturnsDialog} 
+          onOpenChange={setShowReturnsDialog} 
+        />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -76,7 +81,7 @@ export function InventoryPage() {
           <div className="p-6 space-y-6">
             <StatsInventory />
 
-            <Tabs value={activeTab} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsListsCom />
 
               <div className="mt-4">

@@ -164,12 +164,21 @@ export function ReportsPage() {
   };
 
   const handleDownloadReport = () => {
-    if (!currentReportData) return;
+    // Regenerar siempre con parámetros actuales para evitar desalineos de tipo/datos
+    const freshData = generateReportData(
+      reportType,
+      dateFrom,
+      dateTo,
+      category,
+      supplierFilter,
+      batchFilter,
+      { medications, movements, alerts }
+    );
 
     if (formatType === "pdf") {
-      generatePDF(currentReportData, reportType);
+      generatePDF(freshData, reportType);
     } else {
-      generateExcel(currentReportData, reportType);
+      generateExcel(freshData, reportType);
     }
 
     toast({
