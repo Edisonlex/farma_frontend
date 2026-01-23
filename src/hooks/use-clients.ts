@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { mockClients } from "@/lib/mock-data";
+import { ClientCreateSchema, ClientUpdateSchema } from "@/lib/schemas";
+import { normalizeString } from "@/lib/utils";
+import { listClients, createClient, updateClientServer, deleteClientServer } from "@/services/clients";
+import { hasApi } from "@/lib/api";
 
 export interface ClientRecord {
   id: string;
@@ -46,6 +50,15 @@ export function useClients() {
     return mockClients as ClientRecord[];
   });
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const remote = await listClients();
+        if (remote && remote.length) setClients(remote);
+      } catch {}
+    })();
+  }, []);
+
   const saveTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -72,23 +85,66 @@ export function useClients() {
     };
   }, [clients]);
 
-  const addClient = (data: Omit<ClientRecord, "id">) => {
-    const newClient: ClientRecord = {
-      id: Date.now().toString(),
+  const addClient = async (data: Omit<ClientRecord, "id">) => {
+    const v = ClientCreateSchema.safeParse({
       ...data,
-      createdAt: new Date(),
-      lastPurchase: null,
-      totalPurchases: 0,
-      totalAmount: 0,
-    };
+      // adapt birthDate to string if Date provided
+      birthDate: typeof (data as any).birthDate === "string" ? (data as any).birthDate : ((data as any).birthDate ? (data as any).birthDate.toISOString().slice(0, 10) : undefined),
+    });
+    if (!v.success) return;
+    const nameNorm = normalizeString((v.data.name || "").trim());
+    const docNorm = (v.data.document || "").replace(/\D/g, "");
+    const exists = clients.some((c) => normalizeString((c.name || "").trim()) === nameNorm || ((c.document || "").replace(/\D/g, "") === docNorm && docNorm.length > 0));
+    if (exists) return;
+    if (hasApi()) {
+      try {
+        const created = await createClient(v.data as any);
+        setClients((prev) => [...prev, created]);
+        return;
+      } catch {}
+    }
+    const newClient: ClientRecord = { id: Date.now().toString(), ...v.data, createdAt: new Date(), lastPurchase: null, totalPurchases: 0, totalAmount: 0 } as any;
     setClients((prev) => [...prev, newClient]);
   };
 
-  const updateClient = (id: string, updates: Partial<ClientRecord>) => {
-    setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
+  const updateClient = async (id: string, updates: Partial<ClientRecord>) => {
+    const v = ClientUpdateSchema.safeParse({
+      ...updates,
+      birthDate: typeof updates.birthDate === "string" ? updates.birthDate : (updates.birthDate ? (updates.birthDate as Date).toISOString().slice(0, 10) : undefined),
+    });
+    if (!v.success) return;
+    if (v.data.name !== undefined || v.data.document !== undefined) {
+      const nameNorm = v.data.name !== undefined ? normalizeString(String(v.data.name).trim()) : undefined;
+      const docNorm = v.data.document !== undefined ? String(v.data.document).replace(/\D/g, "") : undefined;
+      const exists = clients.some(
+        (c) =>
+          c.id !== id &&
+          ((nameNorm && normalizeString((c.name || "").trim()) === nameNorm) ||
+            (docNorm && (c.document || "").replace(/\D/g, "") === docNorm)),
+      );
+      if (exists) return;
+    }
+    const merged: Partial<ClientRecord> = { ...v.data } as any;
+    if (merged.birthDate !== undefined) {
+      merged.birthDate = merged.birthDate ? new Date(String(merged.birthDate)) : null;
+    }
+    if (hasApi()) {
+      try {
+        const updated = await updateClientServer(id, merged as any);
+        if (updated)
+          setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+        else
+          setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...merged } : c)));
+        return;
+      } catch {}
+    }
+    setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...merged } : c)));
   };
 
-  const deleteClient = (id: string) => {
+  const deleteClient = async (id: string) => {
+    if (hasApi()) {
+      try { await deleteClientServer(id); } catch {}
+    }
     setClients((prev) => prev.filter((c) => c.id !== id));
   };
 

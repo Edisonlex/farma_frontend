@@ -6,6 +6,7 @@ import { useSystemConfig } from "./configuration-context";
 import { PdfService, InvoiceData } from "@/lib/pdf-service";
 import { SaleCreateSchema } from "@/lib/schemas";
 import { mockClients, mockMedications } from "@/lib/mock-data";
+import { useRealtime } from "@/context/realtime-context";
 
 export interface CartItem {
   id: string;
@@ -22,6 +23,8 @@ export interface Customer {
   document?: string;
   email?: string;
   address?: string;
+  phone?: string;
+  birthDate?: string;
 }
 
 export interface Sale {
@@ -57,6 +60,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
   const { config: systemConfig } = useSystemConfig();
   const { toast } = useToast();
   const [sales, setSales] = useState<Sale[]>([]);
+  const { clientId, publish, subscribe } = useRealtime();
 
   // Cargar ventas desde localStorage al inicializar
   useEffect(() => {
@@ -138,7 +142,15 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
           saleData.customer.address === ""
             ? undefined
             : saleData.customer.address,
-        name: saleData.customer.name || "Consumidor Final",
+        phone:
+          (saleData.customer as any).phone === ""
+            ? undefined
+            : (saleData.customer as any).phone,
+        birthDate:
+          (saleData.customer as any).birthDate === ""
+            ? undefined
+            : (saleData.customer as any).birthDate,
+        name: undefined,
       },
       // Asegurar que items tenga los campos requeridos y numéricos
       items: saleData.items.map((item) => ({
@@ -178,6 +190,13 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       date: new Date(),
       status: "Completada",
     };
+    newSale.customer = {
+      ...newSale.customer,
+      name:
+        (saleData.customer.name && saleData.customer.name.trim())
+          ? saleData.customer.name
+          : "Consumidor Final",
+    };
 
     setSales((prev) => {
       const updated = [...prev, newSale];
@@ -189,10 +208,14 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       }
       return updated;
     });
+    publish("sales.sale.add", newSale);
 
     // Generar comprobante PDF siempre
     const customerInfo: Customer = {
-      name: newSale.customer.name || "Consumidor Final",
+      name:
+        (saleData.customer.name && saleData.customer.name.trim())
+          ? saleData.customer.name
+          : "Consumidor Final",
       document: saleData.customer?.document || "",
       email: saleData.customer?.email || "",
       address: saleData.customer?.address || "",
@@ -234,6 +257,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
         sale.id === saleId ? { ...sale, status: "Anulada" } : sale
       )
     );
+    publish("sales.sale.cancel", { id: saleId });
 
     toast({
       title: "Venta anulada",
@@ -276,6 +300,21 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       { cash: 0, card: 0, transfer: 0, total: 0 }
     );
   };
+
+  useEffect(() => {
+    const u1 = subscribe("sales.sale.add", (sale: Sale, source) => {
+      if (source === clientId) return;
+      setSales((prev) => [...prev, { ...sale, date: new Date(sale.date) }]);
+    });
+    const u2 = subscribe("sales.sale.cancel", (data: { id: string }, source) => {
+      if (source === clientId) return;
+      setSales((prev) => prev.map((s) => (s.id === data.id ? { ...s, status: "Anulada" } : s)));
+    });
+    return () => {
+      u1();
+      u2();
+    };
+  }, [clientId, subscribe]);
 
   return (
     <SalesContext.Provider

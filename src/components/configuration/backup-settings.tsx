@@ -38,6 +38,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useBackupConfig } from "@/context/configuration-context";
+import { useRealtime } from "@/context/realtime-context";
+import { getBackupOverview, requestBackup, getBackupStatus, downloadBackup } from "@/services/backups";
 
 // Extender la interfaz BackupConfig para incluir propiedades adicionales
 interface ExtendedBackupConfig {
@@ -69,19 +71,59 @@ export function BackupSettings() {
   const { config: settings, updateConfig } = useBackupConfig();
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const { subscribe } = useRealtime();
 
   const [backupStatus, setBackupStatus] = useState({
-    lastBackup: "2024-01-15 02:00:00",
-    lastBackupSize: "2.3 GB",
-    lastBackupDuration: "15 minutos",
-    nextBackup: "2024-01-16 02:00:00",
-    totalBackups: 28,
-    totalSize: "64.2 GB",
-    availableSpace: "156.8 GB",
+    lastBackup: "",
+    lastBackupSize: "",
+    lastBackupDuration: "",
+    nextBackup: "",
+    totalBackups: 0,
+    totalSize: "",
+    availableSpace: "",
     backupHealth: "good" as "good" | "warning" | "error",
     isRunning: false,
     progress: 0,
+    currentJobId: "" as string,
+    currentFilename: undefined as string | undefined,
   });
+
+  // Cargar estado real desde el backend (o fallback)
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const ov = await getBackupOverview();
+        setBackupStatus((prev) => ({
+          ...prev,
+          lastBackup: ov.lastBackup,
+          lastBackupSize: ov.lastBackupSize,
+          lastBackupDuration: ov.lastBackupDuration,
+          nextBackup: ov.nextBackup,
+          totalBackups: ov.totalBackups,
+          totalSize: ov.totalSize,
+          availableSpace: ov.availableSpace,
+          backupHealth: ov.backupHealth,
+        }));
+      } catch (e) {
+        // silencioso
+      }
+    })();
+  }, []);
+
+  // Suscripción tiempo real para progreso de respaldo
+  React.useEffect(() => {
+    const unsub = subscribe("backup.update", (payload) => {
+      if (!payload) return;
+      setBackupStatus((prev) => ({
+        ...prev,
+        progress: payload.progress ?? prev.progress,
+        isRunning: payload.isRunning ?? prev.isRunning,
+        lastBackup: payload.lastBackup ?? prev.lastBackup,
+        totalBackups: payload.totalBackups ?? prev.totalBackups,
+      }));
+    });
+    return () => { try { unsub(); } catch {} };
+  }, [subscribe]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -103,24 +145,31 @@ export function BackupSettings() {
   const handleCreateBackup = async () => {
     setIsCreatingBackup(true);
     setBackupStatus((prev) => ({ ...prev, isRunning: true, progress: 0 }));
-
     try {
-      // Simular progreso del respaldo
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        setBackupStatus((prev) => ({ ...prev, progress: i }));
+      const job = await requestBackup();
+      setBackupStatus((prev) => ({ ...prev, currentJobId: job.id }));
+      // Polling de estado si no llega por tiempo real
+      for (let i = 0; i < 50; i++) {
+        const st = await getBackupStatus(job.id);
+        setBackupStatus((prev) => ({ ...prev, progress: st.progress, currentFilename: st.filename }));
+        if (st.ready) break;
+        await new Promise((r) => setTimeout(r, 1000));
       }
-
-      toast.success("Respaldo creado exitosamente");
+      const filename = backupStatus.currentFilename || `backup-${job.id}.zip`;
+      await downloadBackup(job.id, filename);
+      toast.success("Respaldo creado y descargado exitosamente");
       setBackupStatus((prev) => ({
         ...prev,
         lastBackup: new Date().toLocaleString(),
         totalBackups: prev.totalBackups + 1,
         isRunning: false,
         progress: 0,
+        currentJobId: "",
+        currentFilename: undefined,
       }));
     } catch (error) {
-      toast.error("Error al crear el respaldo");
+      toast.error("Error al crear o descargar el respaldo");
+      setBackupStatus((prev) => ({ ...prev, isRunning: false }));
     } finally {
       setIsCreatingBackup(false);
     }

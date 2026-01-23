@@ -1,9 +1,14 @@
 import { z } from "zod";
-import { isValidCedula, isValidRuc, isValidEcuadorDocument } from "./utils";
+import { isValidCedula, isValidRuc, isValidEcuadorDocument, isValidPersonName, isValidEntityName } from "./utils";
 
 export const MedicationSchema = z.object({
   id: z.string(),
-  name: z.string().min(1),
+  name: z
+    .string()
+    .min(1, { message: "Nombre requerido" })
+    .refine((v) => isValidEntityName(v), {
+      message: "Nombre de producto inválido",
+    }),
   batch: z.string().min(1),
   expiryDate: z
     .date()
@@ -17,7 +22,13 @@ export const MedicationSchema = z.object({
   activeIngredient: z.string().optional(),
   price: z.number().min(0),
   location: z.string().optional(),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageUrl: z
+    .union([
+      z.string(),
+      z.instanceof(File).refine((file) => file.size > 0, "Archivo de imagen requerido"),
+    ])
+    .nullable()
+    .optional(),
   lastUpdated: z.date().optional(),
 });
 
@@ -54,16 +65,28 @@ export const InventoryMovementFormSchema = z.object({
 
 export const CategorySchema = z.object({
   id: z.string(),
-  name: z.string().min(1),
+  name: z
+    .string()
+    .min(1, { message: "Nombre requerido" })
+    .refine((v) => isValidEntityName(v), { message: "Nombre de categoría inválido" }),
   description: z.string().optional(),
 });
 export const CategoryCreateSchema = CategorySchema.omit({ id: true });
 
 const SupplierBaseSchema = z.object({
   id: z.string(),
-  name: z.string().min(1),
-  nombreComercial: z.string().min(1, { message: "Nombre comercial requerido" }),
-  razonSocial: z.string().min(1, { message: "Razón social requerida" }),
+  name: z
+    .string()
+    .min(1, { message: "Nombre requerido" })
+    .refine((v) => isValidEntityName(v), { message: "Nombre inválido" }),
+  nombreComercial: z
+    .string()
+    .min(1, { message: "Nombre comercial requerido" })
+    .refine((v) => isValidEntityName(v), { message: "Nombre comercial inválido" }),
+  razonSocial: z
+    .string()
+    .min(1, { message: "Razón social requerida" })
+    .refine((v) => isValidEntityName(v), { message: "Razón social inválida" }),
   tipo: z.enum(["empresa", "persona"]),
   ruc: z
     .string()
@@ -91,7 +114,9 @@ const SupplierBaseSchema = z.object({
         ),
       { message: "Teléfono de Ecuador inválido" },
     ),
-  email: z.string().email().optional(),
+  email: z.union([z.string().email(), z.literal("")]).optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
 });
 
 export const SupplierSchema = SupplierBaseSchema.superRefine((val, ctx) => {
@@ -175,25 +200,109 @@ export const CartItemSchema = z.object({
 });
 
 export const CustomerBaseSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z
+    .string()
+    .optional()
+    .refine((v) => !v || isValidPersonName(v), { message: "Nombre inválido" }),
   document: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.union([z.string().email(), z.literal("")]).optional(),
   address: z.string().optional(),
+  phone: z
+    .string()
+    .optional()
+    .refine(
+      (v) =>
+        !v ||
+        /^(?:\+593(?:[2-7]\d{7}|9\d{8})|0[2-7]\d{7}|09\d{8})$/.test(
+          v.replace(/[\s-]/g, ""),
+        ),
+      { message: "Teléfono de Ecuador inválido" },
+    ),
+  birthDate: z
+    .string()
+    .optional()
+    .refine((s) => {
+      if (!s) return true;
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s));
+      if (!m) return false;
+      const yyyy = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10);
+      const dd = parseInt(m[3], 10);
+      const d = new Date(yyyy, mm - 1, dd);
+      const valid = d.getFullYear() === yyyy && d.getMonth() === mm - 1 && d.getDate() === dd;
+      const notFuture = d <= new Date();
+      const plausible = yyyy >= 1900;
+      const now = new Date();
+      let age = now.getFullYear() - d.getFullYear();
+      const hadBirthday =
+        now.getMonth() > d.getMonth() ||
+        (now.getMonth() === d.getMonth() && now.getDate() >= d.getDate());
+      if (!hadBirthday) age -= 1;
+      return valid && notFuture && plausible && age >= 18;
+    }, { message: "Fecha de nacimiento inválida o menor de edad" }),
 });
 export const CustomerSchema = CustomerBaseSchema.refine(
   (v) => !v.document || isValidEcuadorDocument(v.document),
   {
-    message: "Documento de Ecuador inválido (cédula/RUC)",
+    message: "Documento de Ecuador inválido (cédula)",
     path: ["document"],
   },
 );
-export const CustomerFormSchema = CustomerBaseSchema.partial().refine(
-  (v) => !v.document || isValidEcuadorDocument(v.document),
-  {
+export const CustomerFormSchema = CustomerBaseSchema.partial()
+  .refine((v) => !v.document || isValidEcuadorDocument(v.document), {
     message: "Documento de Ecuador inválido (cédula/RUC)",
     path: ["document"],
-  },
-);
+  })
+  .superRefine((val, ctx) => {
+    if (val.name && val.name.trim()) {
+      if (!isValidPersonName(val.name)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["name"],
+          message: "Nombre inválido: debe tener al menos 2 palabras, sin números ni caracteres especiales",
+        });
+      }
+    }
+    if (val.birthDate) {
+      const s = String(val.birthDate);
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (!m) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birthDate"],
+          message: "Fecha inválida (AAAA-MM-DD)",
+        });
+        return;
+      }
+      const yyyy = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10);
+      const dd = parseInt(m[3], 10);
+      const d = new Date(yyyy, mm - 1, dd);
+      const valid =
+        d.getFullYear() === yyyy && d.getMonth() === mm - 1 && d.getDate() === dd;
+      const notFuture = d <= new Date();
+      const plausible = yyyy >= 1900;
+      const now = new Date();
+      let age = now.getFullYear() - d.getFullYear();
+      const hadBirthday =
+        now.getMonth() > d.getMonth() ||
+        (now.getMonth() === d.getMonth() && now.getDate() >= d.getDate());
+      if (!hadBirthday) age -= 1;
+      if (!valid || !notFuture || !plausible) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birthDate"],
+          message: "Fecha de nacimiento inválida",
+        });
+      } else if (age < 18) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birthDate"],
+          message: "Debe ser mayor de 18 años",
+        });
+      }
+    }
+  });
 
 export const SaleSchema = z.object({
   id: z.string(),
@@ -354,7 +463,10 @@ export const UserRoleSchema = z.enum([
 
 export const UserSchema = z.object({
   id: z.string(),
-  name: z.string().min(1),
+  name: z
+    .string()
+    .min(1, { message: "Nombre requerido" })
+    .refine((v) => isValidPersonName(v), { message: "Nombre de usuario inválido" }),
   email: z.string().email(),
   role: UserRoleSchema,
   password: z.string().min(6).optional(),
@@ -374,7 +486,10 @@ export const UserUpdateSchema = UserSchema.partial().omit({ id: true });
 
 export const UserFormCreateSchema = z
   .object({
-    name: z.string().min(1),
+    name: z
+      .string()
+      .min(1, "El nombre es requerido")
+      .refine((v) => isValidPersonName(v), { message: "Nombre inválido" }),
     email: z.string().email(),
     role: UserRoleSchema,
     password: z
@@ -411,7 +526,10 @@ export const UserFormCreateSchema = z
 
 export const UserFormUpdateSchema = z
   .object({
-    name: z.string().min(1),
+    name: z
+      .string()
+      .min(1, "El nombre es requerido")
+      .refine((v) => isValidPersonName(v), { message: "Nombre inválido" }),
     email: z.string().email(),
     role: UserRoleSchema,
     password: z
@@ -523,7 +641,7 @@ export const ClientTypeSchema = z.enum([
 export const ClientBaseSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  email: z.string().email().optional(),
+  email: z.union([z.string().email(), z.literal("")]).optional(),
   phone: z
     .string()
     .optional()
@@ -549,7 +667,7 @@ export const ClientBaseSchema = z.object({
   companyName: z.string().optional(),
   taxId: z.string().optional(),
   contactPerson: z.string().optional(),
-  website: z.string().url().optional(),
+  website: z.union([z.string().url(), z.literal("")]).optional(),
   createdAt: z.date().optional(),
   lastPurchase: z.date().nullable().optional(),
   totalPurchases: z.number().optional(),
@@ -621,8 +739,129 @@ export const ClientCreateSchema = ClientBaseSchema.omit({
   lastPurchase: true,
   totalPurchases: true,
   totalAmount: true,
+}).extend({
+  document: z.string().optional(),
+}).superRefine((val, ctx) => {
+  if (val.type === "empresa" || val.type === "institucion") {
+    if (!val.companyName || !val.companyName.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["companyName"],
+        message: "El nombre es requerido",
+      });
+    }
+    if (!val.taxId || !val.taxId.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["taxId"],
+        message: "El RUC/NIT es requerido",
+      });
+    }
+  }
+  if (val.birthDate) {
+    const s = String(val.birthDate);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (!m) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["birthDate"],
+        message: "Fecha inválida (AAAA-MM-DD)",
+      });
+    } else {
+      const yyyy = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10);
+      const dd = parseInt(m[3], 10);
+      const d = new Date(yyyy, mm - 1, dd);
+      const valid =
+        d.getFullYear() === yyyy &&
+        d.getMonth() === mm - 1 &&
+        d.getDate() === dd;
+      const notFuture = d <= new Date();
+      const plausible = yyyy >= 1900;
+      const now = new Date();
+      let age = now.getFullYear() - d.getFullYear();
+      const hadBirthday =
+        now.getMonth() > d.getMonth() ||
+        (now.getMonth() === d.getMonth() && now.getDate() >= d.getDate());
+      if (!hadBirthday) age -= 1;
+      if (!valid || !notFuture || !plausible) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birthDate"],
+          message: "Fecha de nacimiento inválida",
+        });
+      } else if (age < 18) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birthDate"],
+          message: "Debe ser mayor de 18 años",
+        });
+      }
+    }
+  }
 });
-export const ClientUpdateSchema = ClientBaseSchema.partial().omit({ id: true });
+
+export const ClientUpdateSchema = ClientBaseSchema.partial()
+  .omit({ id: true })
+  .superRefine((val, ctx) => {
+    if (val.type === "empresa" || val.type === "institucion") {
+      if (val.companyName !== undefined && !String(val.companyName).trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["companyName"],
+          message: "El nombre es requerido",
+        });
+      }
+      if (val.taxId !== undefined && !String(val.taxId).trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["taxId"],
+          message: "El RUC/NIT es requerido",
+        });
+      }
+    }
+    if (val.birthDate) {
+      const s = String(val.birthDate);
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (!m) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birthDate"],
+          message: "Fecha inválida (AAAA-MM-DD)",
+        });
+      } else {
+        const yyyy = parseInt(m[1], 10);
+        const mm = parseInt(m[2], 10);
+        const dd = parseInt(m[3], 10);
+        const d = new Date(yyyy, mm - 1, dd);
+        const valid =
+          d.getFullYear() === yyyy &&
+          d.getMonth() === mm - 1 &&
+          d.getDate() === dd;
+        const notFuture = d <= new Date();
+        const plausible = yyyy >= 1900;
+        const now = new Date();
+        let age = now.getFullYear() - d.getFullYear();
+        const hadBirthday =
+          now.getMonth() > d.getMonth() ||
+          (now.getMonth() === d.getMonth() && now.getDate() >= d.getDate());
+        if (!hadBirthday) age -= 1;
+        if (!valid || !notFuture || !plausible) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["birthDate"],
+            message: "Fecha de nacimiento inválida",
+          });
+        } else if (age < 18) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["birthDate"],
+            message: "Debe ser mayor de 18 años",
+          });
+        }
+      }
+    }
+  });
 
 export const LoginFormSchema = z.object({
   email: z.string().email({ message: "Email inválido" }),

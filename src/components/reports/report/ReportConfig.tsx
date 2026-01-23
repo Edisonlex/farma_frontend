@@ -141,27 +141,9 @@ export function ReportConfig({
         <Separator />
 
         {/* Acciones */}
-        <div className="flex gap-3">
-          <Button
-            onClick={handleGenerateReport}
-            disabled={!reportType || !formatType || isGenerating}
-            className="flex-1"
-          >
-            {isGenerating ? (
-              <>
-                <Clock className="mr-2 h-4 w-4 animate-spin" />
-                Generando...
-              </>
-            ) : (
-              <>
-                <Eye className="mr-2 h-4 w-4" />
-                Vista Previa
-              </>
-            )}
-          </Button>
-
+        <div className="flex justify-end">
           {showPreview && (
-            <Button onClick={handleDownloadReport} variant="ghost">
+            <Button onClick={handleDownloadReport}>
               <Download className="mr-2 h-4 w-4" />
               Descargar
             </Button>

@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUsers } from "@/hooks/use-users";
+import { UserUpdateSchema } from "@/lib/schemas";
+import { normalizeString, formatEcPhone } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { rolePermissions } from "@/lib/auth";
@@ -51,7 +53,7 @@ const roleColors = {
 
 export function UserProfile() {
   const { user, updateUser } = useAuth();
-  const { updateUser: updateUserInList } = useUsers();
+  const { users, updateUser: updateUserInList } = useUsers();
   const { translatePermission } = usePermissions();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -60,6 +62,7 @@ export function UserProfile() {
     phone: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   // Efecto para inicializar formData cuando user esté disponible
   useEffect(() => {
@@ -75,32 +78,46 @@ export function UserProfile() {
   if (!user) return null;
 
   const handleSave = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) newErrors.name = "El nombre es requerido";
-    if (!formData.email.trim()) newErrors.email = "El email es requerido";
-    else if (!/\S+@\S+\.\S+/.test(formData.email))
-      newErrors.email = "Email inválido";
-    if (formData.phone && !/^\+?[0-9\s-]{7,15}$/.test(formData.phone))
-      newErrors.phone = "Teléfono inválido";
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length) {
+    setIsSaving(true);
+    setErrors({});
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || undefined,
+    };
+    const v = UserUpdateSchema.safeParse(payload);
+    if (!v.success) {
+      const next: Record<string, string> = {};
+      v.error.issues.forEach((i) => {
+        const k = (i.path?.[0] as string) || "general";
+        next[k] = i.message || "Campo inválido";
+      });
+      setErrors(next);
       toast.error("Por favor corrige los campos marcados");
+      setIsSaving(false);
       return;
     }
     if (user) {
-      updateUser({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-      });
-      updateUserInList(user.id, {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-      });
+      const emailLower = v.data.email ? v.data.email.toLowerCase() : undefined;
+      const nameKey = v.data.name ? normalizeString(v.data.name.trim()) : undefined;
+      const dup = users.some(
+        (u) =>
+          u.id !== user.id &&
+          ((emailLower && u.email.toLowerCase() === emailLower) ||
+            (nameKey && normalizeString((u.name || "").trim()) === nameKey)),
+      );
+      if (dup) {
+        setErrors((e) => ({ ...e, email: e.email || "Correo/nombre ya registrado" }));
+        toast.error("Correo o nombre ya registrado");
+        setIsSaving(false);
+        return;
+      }
+      updateUser(v.data);
+      updateUserInList(user.id, v.data);
     }
     toast.success("Perfil actualizado");
     setIsEditing(false);
+    setIsSaving(false);
   };
 
   const handleCancel = () => {
@@ -257,7 +274,7 @@ export function UserProfile() {
                         type="tel"
                         value={formData.phone}
                         onChange={(e) =>
-                          setFormData({ ...formData, phone: e.target.value })
+                          setFormData({ ...formData, phone: formatEcPhone(e.target.value) })
                         }
                         className={`bg-background ${
                           errors.phone ? "border-red-500" : ""
@@ -325,9 +342,18 @@ export function UserProfile() {
                       <X className="mr-2 h-4 w-4" />
                       Cancelar
                     </Button>
-                    <Button onClick={handleSave}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Guardar Cambios
+                    <Button onClick={handleSave} disabled={isSaving}>
+                      {isSaving ? (
+                        <>
+                          <Clock className="mr-2 h-4 w-4 animate-spin" />
+                          Guardando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Guardar Cambios
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}

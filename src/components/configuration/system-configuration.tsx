@@ -19,14 +19,12 @@ import {
   Users,
   Package,
   Mail,
-  Server,
   Sliders,
 } from "lucide-react";
 import { NotificationSettings } from "./notification-settings";
 import { SecuritySettings } from "./security-settings";
 import { InventorySettings } from "./inventory-settings";
 import { UserSettings } from "./user-settings";
-import { SystemSettings } from "./system-settings";
 import { BackupSettings } from "./backup-settings";
 import {
   ConfigurationProvider,
@@ -62,12 +60,6 @@ function SystemConfigurationContent() {
       label: "Usuarios",
       icon: Users,
       description: "Configuraciones de gestión de usuarios",
-    },
-    {
-      id: "system",
-      label: "Sistema",
-      icon: Server,
-      description: "Configuraciones generales del sistema",
     },
     {
       id: "backup",
@@ -120,7 +112,7 @@ function SystemConfigurationContent() {
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto p-1">
+              <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto p-1">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
@@ -157,10 +149,6 @@ function SystemConfigurationContent() {
 
               <TabsContent value="users" className="space-y-6">
                 <UserSettings />
-              </TabsContent>
-
-              <TabsContent value="system" className="space-y-6">
-                <SystemSettings />
               </TabsContent>
 
               <TabsContent value="backup" className="space-y-6">

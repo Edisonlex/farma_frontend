@@ -5,6 +5,7 @@ import { ConfigurationProvider } from "./configuration-context";
 import { AlertsProvider } from "./AlertsContext";
 import { InventoryProvider } from "./inventory-context";
 import { SalesProvider } from "./sales-context";
+import { RealtimeProvider } from "./realtime-context";
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -18,13 +19,15 @@ interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ConfigurationProvider>
-      <InventoryProvider>
-        <SalesProvider>
-          <AlertsProvider>
-            {children}
-          </AlertsProvider>
-        </SalesProvider>
-      </InventoryProvider>
+      <RealtimeProvider>
+        <InventoryProvider>
+          <SalesProvider>
+            <AlertsProvider>
+              {children}
+            </AlertsProvider>
+          </SalesProvider>
+        </InventoryProvider>
+      </RealtimeProvider>
     </ConfigurationProvider>
   );
 }

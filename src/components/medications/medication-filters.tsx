@@ -24,14 +24,22 @@ interface MedicationFiltersProps {
   categories: string[];
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
+  selectedStatus: string;
+  onStatusChange: (status: string) => void;
   medications: Medication[];
+  visibleCount: number;
+  totalCount: number;
 }
 
 export function MedicationFilters({
   categories,
   selectedCategory,
   onCategoryChange,
+  selectedStatus,
+  onStatusChange,
   medications,
+  visibleCount,
+  totalCount,
 }: MedicationFiltersProps) {
   const { getCategoryName } = useInventory();
   const getCategoryCount = (category: string) => {
@@ -43,7 +51,6 @@ export function MedicationFilters({
     onCategoryChange("all");
   };
 
-  // Get unique statuses for demonstration (you can adapt this based on your data)
   const statuses = ["Activo", "Inactivo", "Pendiente"];
 
   return (
@@ -125,7 +132,7 @@ export function MedicationFilters({
                 Estado
               </label>
             </div>
-            <Select defaultValue="all">
+            <Select value={selectedStatus} onValueChange={onStatusChange}>
               <SelectTrigger className="bg-background border-border/70 hover:border-border transition-colors">
                 <SelectValue placeholder="Selecciona un estado" />
               </SelectTrigger>
@@ -148,41 +155,44 @@ export function MedicationFilters({
         </div>
 
         {/* Active Filters */}
-        {selectedCategory !== "all" && (
+        {(selectedCategory !== "all" || selectedStatus !== "all") && (
           <div className="space-y-3 pt-4 border-t border-border/40">
             <label className="text-sm font-medium text-foreground">
               Filtros aplicados
             </label>
             <div className="flex flex-wrap gap-2">
-              <Badge
-                variant="secondary"
-                className="flex items-center gap-1 py-1.5 px-3 bg-primary/10 text-primary border-primary/20"
-              >
-                <span className="capitalize">{getCategoryName(selectedCategory)}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 ml-1 hover:bg-primary/20 rounded-full"
-                  onClick={() => onCategoryChange("all")}
+              {selectedCategory !== "all" && (
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-1 py-1.5 px-3 bg-primary/10 text-primary border-primary/20"
                 >
-                  <X className="w-3 h-3" />
-                </Button>
-              </Badge>
-
-              {/* Example additional filter badge */}
-              <Badge
-                variant="ghost"
-                className="flex items-center gap-1 py-1.5 px-3"
-              >
-                <span>Activo</span>
-                <Button
+                  <span className="capitalize">{getCategoryName(selectedCategory)}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 ml-1 hover:bg-primary/20 rounded-full"
+                    onClick={() => onCategoryChange("all")}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </Badge>
+              )}
+              {selectedStatus !== "all" && (
+                <Badge
                   variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 ml-1 hover:bg-accent rounded-full"
+                  className="flex items-center gap-1 py-1.5 px-3"
                 >
-                  <X className="w-3 h-3" />
-                </Button>
-              </Badge>
+                  <span className="capitalize">{selectedStatus}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 ml-1 hover:bg-accent rounded-full"
+                    onClick={() => onStatusChange("all")}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </Badge>
+              )}
             </div>
           </div>
         )}
@@ -192,10 +202,7 @@ export function MedicationFilters({
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Medicamentos visibles</span>
             <span className="font-medium text-foreground">
-              {selectedCategory === "all"
-                ? medications.length
-                : getCategoryCount(selectedCategory)}{" "}
-              / {medications.length}
+              {visibleCount} / {totalCount}
             </span>
           </div>
         </div>

@@ -19,17 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { CalendarIcon, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn, getDefaultImageForName } from "@/lib/utils";
 import type { Medication } from "@/lib/types";
+import type { z } from "zod";
 import { useInventory } from "@/context/inventory-context";
 import { CategoryDialog } from "../management/CategoryDialog";
 import { SupplierDialog } from "../suppliers/SupplierDialog";
@@ -51,7 +46,9 @@ interface MedicationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   medication?: Medication | null;
-  onSave: (medication: Medication | Omit<Medication, "id">) => void;
+  onSave: (
+    medication: Medication | z.infer<typeof MedicationCreateSchema>
+  ) => void;
 }
 
 export function MedicationDialog({
@@ -85,8 +82,9 @@ export function MedicationDialog({
     activeIngredient?: string;
     price: number;
     location: string;
-    imageUrl?: string;
+    imageUrl?: any;
   }>(isEditing ? MedicationUpdateSchema : MedicationCreateSchema, {
+    mode: "onChange",
     defaultValues: {
       name: "",
       batch: "",
@@ -98,12 +96,13 @@ export function MedicationDialog({
       activeIngredient: undefined,
       price: 0,
       location: "",
-      imageUrl: "",
+      imageUrl: null,
     },
   });
 
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Para forzar re-render
 
   useEffect(() => {
@@ -121,6 +120,7 @@ export function MedicationDialog({
         location: medication.location,
         imageUrl: medication.imageUrl || "",
       });
+      setImagePreview(medication.imageUrl || null);
     } else {
       form.reset({
         name: "",
@@ -133,8 +133,9 @@ export function MedicationDialog({
         activeIngredient: undefined,
         price: 0,
         location: "",
-        imageUrl: "",
+        imageUrl: null,
       });
+      setImagePreview(null);
     }
   }, [medication, open, form]);
 
@@ -449,39 +450,22 @@ export function MedicationDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fecha de Vencimiento *</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !field.value && "text-muted-foreground",
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: es })
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 border-border bg-background">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={(date) => date && field.onChange(date)}
-                            disabled={(date) =>
-                              date < new Date(new Date().setHours(0, 0, 0, 0))
-                            }
-                            captionLayout="dropdown"
-                            fromYear={new Date().getFullYear()}
-                            toYear={new Date().getFullYear() + 10}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="date"
+                          min={format(new Date(), "yyyy-MM-dd")}
+                          value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (!v) return;
+                            const d = new Date(v + "T00:00:00");
+                            field.onChange(d);
+                          }}
+                        />
+                      </div>
                       <FormDescription>
-                        Asegura alertas de vencimiento
+                        Selecciona una fecha válida (no anterior a hoy)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -536,12 +520,25 @@ export function MedicationDialog({
                   name="imageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Imagen del producto (URL)</FormLabel>
+                      <FormLabel>Imagen del producto</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://..." {...field} />
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              field.onChange(file);
+                              setImagePreview(URL.createObjectURL(file));
+                            } else {
+                              field.onChange(null);
+                              setImagePreview(null);
+                            }
+                          }}
+                        />
                       </FormControl>
                       <FormDescription>
-                        Usa una URL segura (https). Opcional.
+                        Sube una imagen para el producto (opcional).
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -551,7 +548,9 @@ export function MedicationDialog({
                 <div className="flex items-center justify-center">
                   <img
                     src={
-                      form.watch("imageUrl") ||
+                      imagePreview ||
+                      (typeof form.watch("imageUrl") === "string" &&
+                        form.watch("imageUrl")) ||
                       getDefaultImageForName(form.watch("name") || "")
                     }
                     alt="Vista previa"

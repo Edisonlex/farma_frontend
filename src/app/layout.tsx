@@ -11,6 +11,7 @@ import { SalesProvider } from "@/context/sales-context";
 import { ConfigurationProvider } from "@/context/configuration-context";
 import { InventoryProvider } from "@/context/inventory-context";
 import { BusinessProvider } from "@/context/business-context";
+import { RealtimeProvider } from "@/context/realtime-context";
 
 export const metadata: Metadata = {
   title: "PharmaCare - Sistema de Inventario",
@@ -60,20 +61,22 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ConfigurationProvider>
-            <AuthProvider>
-              <InventoryProvider>
-                <SalesProvider>
-                  <AlertsProvider>
-                    <BusinessProvider>
-                      <ConditionalNav />
-                      {children}
-                    </BusinessProvider>
-                  </AlertsProvider>
-                </SalesProvider>
-              </InventoryProvider>
-            </AuthProvider>
-          </ConfigurationProvider>
+          <AuthProvider>
+            <RealtimeProvider>
+              <ConfigurationProvider>
+                <InventoryProvider>
+                  <SalesProvider>
+                    <AlertsProvider>
+                      <BusinessProvider>
+                        <ConditionalNav />
+                        {children}
+                      </BusinessProvider>
+                    </AlertsProvider>
+                  </SalesProvider>
+                </InventoryProvider>
+              </ConfigurationProvider>
+            </RealtimeProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

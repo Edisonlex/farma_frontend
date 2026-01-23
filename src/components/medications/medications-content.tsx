@@ -13,12 +13,16 @@ import { MedicationFilters } from "./medication-filters";
 import { MedicationsTable } from "./medications-table";
 import { MedicationDialog } from "./medication-dialog";
 import type { Medication } from "@/lib/types";
+import type { z } from "zod";
+import { MedicationCreateSchema } from "@/lib/schemas";
 
 interface MedicationsContentProps {
   showFilters: boolean;
   categories: string[];
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
+  selectedStatus: string;
+  setSelectedStatus: (status: string) => void;
   medications: Medication[];
   filteredMedications: Medication[];
   canManage: boolean;
@@ -29,7 +33,7 @@ interface MedicationsContentProps {
   setDialogOpen: (open: boolean) => void;
   editingMedication: Medication | null;
   handleSaveMedication: (
-    medication: Medication | Omit<Medication, "id">,
+    medication: Medication | z.infer<typeof MedicationCreateSchema>,
   ) => void;
 }
 
@@ -38,6 +42,8 @@ export function MedicationsContent({
   categories,
   selectedCategory,
   setSelectedCategory,
+  selectedStatus,
+  setSelectedStatus,
   medications,
   filteredMedications,
   canManage,
@@ -68,7 +74,11 @@ export function MedicationsContent({
             categories={categories}
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
+            selectedStatus={selectedStatus}
+            onStatusChange={setSelectedStatus}
             medications={medications}
+            visibleCount={filteredMedications.length}
+            totalCount={medications.length}
           />
         </motion.div>
       )}

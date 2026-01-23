@@ -104,10 +104,12 @@ export function checkPermissions(
 }
 
 // Mock authentication functions
-export async function signIn(email: string, password: string): Promise<User | null> {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+import { hasApi } from "@/lib/api";
+import * as AuthService from "@/services/auth";
 
+export async function signIn(email: string, password: string): Promise<User | null> {
+  if (hasApi()) return AuthService.signIn(email, password);
+  await new Promise((resolve) => setTimeout(resolve, 1000))
   const user = mockUsers.find((u) => u.email === email)
   const override = typeof window !== "undefined" ? localStorage.getItem(`pharmacare_pwd_override:${email}`) : null
   const isValid = override ? password === override : password === "password123"
@@ -118,18 +120,19 @@ export async function signIn(email: string, password: string): Promise<User | nu
 }
 
 export async function signOut(): Promise<void> {
-  // Simulate API call
+  if (hasApi()) return AuthService.signOut();
   await new Promise((resolve) => setTimeout(resolve, 500))
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  // Simulate checking stored session
+  if (hasApi()) return AuthService.getCurrentUser();
   const stored = localStorage.getItem("pharmacare_user")
   return stored ? JSON.parse(stored) : null
 }
 
 // Password reset (mock) — ready to connect backend
 export async function requestPasswordReset(email: string): Promise<{ success: boolean; code?: string }> {
+  if (hasApi()) return AuthService.requestPasswordReset(email);
   await new Promise((resolve) => setTimeout(resolve, 800))
   const user = mockUsers.find((u) => u.email === email)
   if (!user) return { success: false }
@@ -137,11 +140,11 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
   try {
     localStorage.setItem(`pharmacare_reset_code:${email}`, JSON.stringify({ code, expiresAt: Date.now() + 10 * 60 * 1000 }))
   } catch {}
-  // In backend, send email with 'code'
   return { success: true, code }
 }
 
 export async function verifyResetCode(email: string, code: string): Promise<boolean> {
+  if (hasApi()) return AuthService.verifyResetCode(email, code);
   await new Promise((resolve) => setTimeout(resolve, 300))
   try {
     const raw = localStorage.getItem(`pharmacare_reset_code:${email}`)
@@ -155,6 +158,7 @@ export async function verifyResetCode(email: string, code: string): Promise<bool
 }
 
 export async function resetPassword(email: string, newPassword: string): Promise<boolean> {
+  if (hasApi()) return AuthService.resetPassword(email, newPassword);
   await new Promise((resolve) => setTimeout(resolve, 500))
   const user = mockUsers.find((u) => u.email === email)
   if (!user) return false
@@ -162,6 +166,5 @@ export async function resetPassword(email: string, newPassword: string): Promise
     localStorage.setItem(`pharmacare_pwd_override:${email}`, newPassword)
     localStorage.removeItem(`pharmacare_reset_code:${email}`)
   } catch {}
-  // Backend should persist password, invalidate reset code and sessions
   return true
 }

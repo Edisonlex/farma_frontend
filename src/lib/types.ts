@@ -50,6 +50,8 @@ export interface Supplier {
   contact?: string;
   phone?: string;
   email?: string;
+  city?: string;
+  state?: string;
 }
 
 export interface Category {

@@ -85,7 +85,7 @@ export function SalesRegister() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 pb-24 sm:pb-0">
       {/* Product Search */}
       <div className="lg:col-span-2">
         <ProductSearch

@@ -139,9 +139,10 @@ export function generateReportData(
       break;
   }
 
-  // Aplicar filtros adicionales para reportes de inventario
+  // Aplicar filtros adicionales para reportes de inventario y relacionados
   if (
     type === "inventory" ||
+    type === "expiring" ||
     type === "expired" ||
     type === "low-stock"
   ) {

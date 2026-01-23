@@ -5,6 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useInventory } from "@/context/inventory-context";
 
 interface SupplierFilterProps {
   supplierFilter: string;
@@ -17,6 +18,7 @@ export function SupplierFilter({
   setSupplierFilter,
   suppliers,
 }: SupplierFilterProps) {
+  const { getSupplierName } = useInventory();
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Proveedor</label>
@@ -28,7 +30,7 @@ export function SupplierFilter({
           <SelectItem value="all">Todos los proveedores</SelectItem>
           {suppliers.map((sup) => (
             <SelectItem key={sup} value={sup}>
-              {sup}
+              {getSupplierName(sup)}
             </SelectItem>
           ))}
         </SelectContent>

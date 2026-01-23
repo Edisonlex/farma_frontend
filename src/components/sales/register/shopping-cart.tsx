@@ -50,7 +50,7 @@ export function ShoppingCarta({
   };
 
   return (
-    <Card className="border-border/40 bg-card/50 backdrop-blur-sm sticky top-6">
+    <Card className="border-border/40 bg-card/50 backdrop-blur-sm lg:sticky lg:top-6">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -142,6 +142,25 @@ export function ShoppingCarta({
                 </DialogTrigger>
               </Dialog>
             </div>
+
+            {/* Barra de acciones fija en móviles */}
+            {cart.length > 0 && (
+              <div className="fixed bottom-0 inset-x-0 z-40 sm:hidden p-3 bg-background/95 border-t shadow-lg">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm">
+                    <div className="font-semibold text-foreground">Total</div>
+                    <div className="text-muted-foreground">${total.toFixed(2)}</div>
+                  </div>
+                  <Button
+                    className="flex-1 h-12 bg-chart-5 hover:bg-chart-5/90 text-base font-semibold"
+                    onClick={onShowCheckoutDialog}
+                  >
+                    <Receipt className="w-5 h-5 mr-2" />
+                    Procesar Venta
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </CardContent>

@@ -10,6 +10,9 @@ import {
   SystemConfigSchema,
   BackupConfigSchema,
 } from "@/lib/schemas";
+import { useAuth } from "@/hooks/use-auth";
+import { useRealtime } from "@/context/realtime-context";
+import { apiPut, hasApi } from "@/lib/api";
 
 // Tipos de configuración
 export interface NotificationConfig {
@@ -274,6 +277,8 @@ const ConfigurationContext = createContext<ConfigurationContextType | undefined>
 
 export function ConfigurationProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<ConfigurationState>(defaultConfig);
+  const { user } = useAuth();
+  const { clientId, publish, subscribe } = useRealtime();
 
   // Cargar configuración desde localStorage al inicializar
   useEffect(() => {
@@ -294,7 +299,30 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('pharmacare-config', JSON.stringify(config));
   }, [config]);
 
+  // Suscripción en tiempo real para recibir actualizaciones de otras pestañas/usuarios
+  useEffect(() => {
+    const unsub = subscribe("config.update", (payload: { section: keyof ConfigurationState; updates: any }, source) => {
+      if (source === clientId) return;
+      const section = payload.section;
+      const updates = payload.updates || {};
+      setConfig(prev => ({
+        ...prev,
+        [section]: { ...(prev as any)[section], ...updates },
+      }));
+    });
+    return () => { try { unsub(); } catch {} };
+  }, [subscribe, clientId]);
+
+  const ensureAdmin = () => {
+    if (!user || user.role !== "administrador") {
+      toast.error('Solo el Administrador puede cambiar la configuración');
+      return false;
+    }
+    return true;
+  };
+
   const updateNotificationConfig = (updates: Partial<NotificationConfig>) => {
+    if (!ensureAdmin()) return;
     const v = NotificationConfigSchema.partial().safeParse(updates);
     if (!v.success) {
       toast.error('Datos de notificaciones inválidos');
@@ -304,10 +332,13 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       ...prev,
       notifications: { ...prev.notifications, ...v.data }
     }));
+    publish("config.update", { section: "notifications", updates: v.data });
+    try { if (hasApi()) apiPut(`/config/notifications`, v.data); } catch {}
     toast.success('Configuración de notificaciones actualizada');
   };
 
   const updateSecurityConfig = (updates: Partial<SecurityConfig>) => {
+    if (!ensureAdmin()) return;
     const v = SecurityConfigSchema.partial().safeParse(updates);
     if (!v.success) {
       toast.error('Datos de seguridad inválidos');
@@ -317,10 +348,13 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       ...prev,
       security: { ...prev.security, ...v.data }
     }));
+    publish("config.update", { section: "security", updates: v.data });
+    try { if (hasApi()) apiPut(`/config/security`, v.data); } catch {}
     toast.success('Configuración de seguridad actualizada');
   };
 
   const updateInventoryConfig = (updates: Partial<InventoryConfig>) => {
+    if (!ensureAdmin()) return;
     const v = InventoryConfigSchema.partial().safeParse(updates);
     if (!v.success) {
       toast.error('Datos de inventario inválidos');
@@ -330,10 +364,13 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       ...prev,
       inventory: { ...prev.inventory, ...v.data }
     }));
+    publish("config.update", { section: "inventory", updates: v.data });
+    try { if (hasApi()) apiPut(`/config/inventory`, v.data); } catch {}
     toast.success('Configuración de inventario actualizada');
   };
 
   const updateUserConfig = (updates: Partial<UserConfig>) => {
+    if (!ensureAdmin()) return;
     const v = UserConfigSchema.partial().safeParse(updates);
     if (!v.success) {
       toast.error('Datos de usuarios inválidos');
@@ -343,10 +380,13 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       ...prev,
       users: { ...prev.users, ...v.data }
     }));
+    publish("config.update", { section: "users", updates: v.data });
+    try { if (hasApi()) apiPut(`/config/users`, v.data); } catch {}
     toast.success('Configuración de usuarios actualizada');
   };
 
   const updateSystemConfig = (updates: Partial<SystemConfig>) => {
+    if (!ensureAdmin()) return;
     const v = SystemConfigSchema.partial().safeParse(updates);
     if (!v.success) {
       toast.error('Datos del sistema inválidos');
@@ -356,10 +396,13 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       ...prev,
       system: { ...prev.system, ...v.data }
     }));
+    publish("config.update", { section: "system", updates: v.data });
+    try { if (hasApi()) apiPut(`/config/system`, v.data); } catch {}
     toast.success('Configuración del sistema actualizada');
   };
 
   const updateBackupConfig = (updates: Partial<BackupConfig>) => {
+    if (!ensureAdmin()) return;
     const v = BackupConfigSchema.partial().safeParse(updates);
     if (!v.success) {
       toast.error('Datos de respaldos inválidos');
@@ -369,12 +412,16 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       ...prev,
       backup: { ...prev.backup, ...v.data }
     }));
+    publish("config.update", { section: "backup", updates: v.data });
+    try { if (hasApi()) apiPut(`/config/backup`, v.data); } catch {}
     toast.success('Configuración de respaldos actualizada');
   };
 
   const resetToDefaults = () => {
+    if (!ensureAdmin()) return;
     setConfig(defaultConfig);
     localStorage.removeItem('pharmacare-config');
+    publish("config.update", { section: "all", updates: defaultConfig });
     toast.success('Configuración restablecida a valores por defecto');
   };
 

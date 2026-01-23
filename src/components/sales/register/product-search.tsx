@@ -136,17 +136,17 @@ export function ProductSearch({
           />
         </div>
 
-        <div className="max-h-96 overflow-y-auto space-y-3">
+        <div className="max-h-[65vh] sm:max-h-96 overflow-y-auto space-y-3">
           {filteredMedications.map((medication) => (
             <motion.div
               key={medication.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between p-4 border border-border rounded-xl bg-card hover:bg-accent/50 transition-all shadow-sm group"
+              className="flex items-center justify-between p-3 sm:p-4 border border-border rounded-xl bg-card hover:bg-accent/50 transition-all shadow-sm group"
             >
               <div className="flex-1">
                 <div className="flex items-start gap-3">
-                  <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted">
+                  <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted hidden sm:block">
                     <img
                       src={
                         medication.imageUrl ||
@@ -164,19 +164,19 @@ export function ProductSearch({
                     />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">
                       {medication.name}
                     </h4>
                     
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="ghost" className="font-medium">
+                    <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                      <Badge variant="ghost" className="font-medium text-xs sm:text-sm">
                         ${medication.price.toFixed(2)}
                       </Badge>
                       <Badge
                         variant={
                           medication.quantity > 10 ? "secondary" : "destructive"
                         }
-                        className="font-medium"
+                        className="font-medium text-xs sm:text-sm"
                       >
                         Stock: {medication.quantity}
                       </Badge>
@@ -189,7 +189,7 @@ export function ProductSearch({
                   size="sm"
                   variant="ghost"
                   onClick={() => showPrice(medication)}
-                  className="shrink-0"
+                  className="shrink-0 hidden sm:inline-flex"
                 >
                   <DollarSign className="w-4 h-4" />
                 </Button>
@@ -197,7 +197,7 @@ export function ProductSearch({
                   size="sm"
                   variant="ghost"
                   onClick={() => addQuote(medication)}
-                  className="shrink-0"
+                  className="shrink-0 hidden sm:inline-flex"
                 >
                   <Clock className="w-4 h-4" />
                 </Button>
@@ -205,7 +205,7 @@ export function ProductSearch({
                   size="sm"
                   onClick={() => addToCart(medication)}
                   disabled={medication.quantity === 0}
-                  className="shrink-0 bg-primary hover:bg-primary/90"
+                  className="shrink-0 bg-primary hover:bg-primary/90 h-10 w-10 sm:h-auto sm:w-auto"
                 >
                   <Plus className="w-4 h-4" />
                 </Button>

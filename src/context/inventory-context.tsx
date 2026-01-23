@@ -17,7 +17,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { getDefaultImageForName } from "@/lib/utils";
+import { getDefaultImageForName, normalizeString } from "@/lib/utils";
 import {
   MedicationCreateSchema,
   MedicationUpdateSchema,
@@ -29,6 +29,7 @@ import {
   SupplierSchema,
   SupplierUpdateSchema,
 } from "@/lib/schemas";
+import { useRealtime } from "@/context/realtime-context";
 
 interface InventoryContextType {
   medications: Medication[];
@@ -80,6 +81,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const { user } = useAuth();
+  const { clientId, publish, subscribe } = useRealtime();
 
   const genId = () => {
     try {
@@ -88,6 +90,19 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       return `${Date.now().toString()}-${Math.random()
         .toString(36)
         .slice(2, 10)}`;
+    }
+  };
+
+  const normalizeImageUrlValue = (
+    img: string | File | null | undefined,
+    name: string,
+  ): string => {
+    if (!img) return getDefaultImageForName(name);
+    if (typeof img === "string") return img || getDefaultImageForName(name);
+    try {
+      return URL.createObjectURL(img);
+    } catch {
+      return getDefaultImageForName(name);
     }
   };
 
@@ -163,10 +178,18 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       toast.error("Datos de medicamento inválidos");
       return;
     }
+    const nameNorm = normalizeString(v.data.name.trim());
+    const exists = medications.some(
+      (m) => normalizeString(m.name.trim()) === nameNorm,
+    );
+    if (exists) {
+      toast.error("El medicamento ya existe");
+      return;
+    }
     const newMedication: Medication = {
       ...v.data,
       id: Date.now().toString(),
-      imageUrl: v.data.imageUrl || getDefaultImageForName(v.data.name),
+      imageUrl: normalizeImageUrlValue(v.data.imageUrl as any, v.data.name),
     };
 
     const newMovement: InventoryMovement = {
@@ -188,6 +211,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     }
     setMedications((prev) => [...prev, newMedication]);
     setMovements((prev) => [mv.data, ...prev]);
+    publish("inventory.medication.add", newMedication);
+    publish("inventory.movement.add", mv.data);
   };
 
   const updateMedication = (id: string, updates: Partial<Medication>) => {
@@ -196,12 +221,39 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       toast.error("Actualización de medicamento inválida");
       return;
     }
+    if (v.data.name !== undefined && v.data.name.trim()) {
+      const nameNorm = normalizeString(v.data.name.trim());
+      const exists = medications.some(
+        (m) => m.id !== id && normalizeString(m.name.trim()) === nameNorm,
+      );
+      if (exists) {
+        toast.error("Ya existe un medicamento con ese nombre");
+        return;
+      }
+    }
     setMedications((prev) => {
       const originalMedication = prev.find((med) => med.id === id);
       if (!originalMedication) return prev;
 
+      const nextImageUrl =
+        (v.data as any).imageUrl !== undefined
+          ? normalizeImageUrlValue(
+              (v.data as any).imageUrl,
+              originalMedication.name,
+            )
+          : undefined;
+
+      const { imageUrl: _omitImage, ...restUpdates } = v.data as any;
+
       const updatedMedications = prev.map((med) =>
-        med.id === id ? { ...med, ...v.data, lastUpdated: new Date() } : med
+        med.id === id
+          ? {
+              ...med,
+              ...restUpdates,
+              ...(nextImageUrl !== undefined ? { imageUrl: nextImageUrl } : {}),
+              lastUpdated: new Date(),
+            }
+          : med,
       );
 
       if (
@@ -227,15 +279,18 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
           toast.error("Movimiento de ajuste inválido");
         } else {
           setMovements((prevMovements) => [mv.data, ...prevMovements]);
+          publish("inventory.movement.add", mv.data);
         }
       }
 
       return updatedMedications;
     });
+    publish("inventory.medication.update", { id, updates: v.data });
   };
 
   const deleteMedication = (id: string) => {
     setMedications((prev) => prev.filter((med) => med.id !== id));
+    publish("inventory.medication.delete", { id });
   };
 
   const adjustStock = (
@@ -357,6 +412,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       )
     );
     setMovements((prev) => [mv.data, ...prev]);
+    publish("inventory.movement.add", mv.data);
   };
 
   const generateBatch = (name: string) => {
@@ -426,9 +482,9 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       toast.error("Categoría inválida");
       return;
     }
-    const nameNorm = v.data.name.trim().toLowerCase();
+    const nameNorm = normalizeString(v.data.name.trim());
     const exists = categories.some(
-      (c) => c.name.trim().toLowerCase() === nameNorm
+      (c) => normalizeString(c.name.trim()) === nameNorm,
     );
     if (exists) {
       toast.error("La categoría ya existe");
@@ -439,6 +495,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       id: Date.now().toString(),
     };
     setCategories((prev) => [...prev, newCategory]);
+    publish("inventory.category.add", newCategory);
   };
 
   const updateCategory = (id: string, updates: Partial<Category>) => {
@@ -447,9 +504,20 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       toast.error("Actualización de categoría inválida");
       return;
     }
+    if (v.data.name !== undefined) {
+      const nameNorm = normalizeString(String(v.data.name).trim());
+      const exists = categories.some(
+        (c) => c.id !== id && normalizeString(c.name.trim()) === nameNorm,
+      );
+      if (exists) {
+        toast.error("Ya existe una categoría con ese nombre");
+        return;
+      }
+    }
     setCategories((prev) =>
       prev.map((cat) => (cat.id === id ? { ...cat, ...v.data } : cat))
     );
+    publish("inventory.category.update", { id, updates: v.data });
   };
 
   const deleteCategory = (id: string) => {
@@ -462,6 +530,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    publish("inventory.category.delete", { id });
   };
 
   // Funciones para proveedores
@@ -471,12 +540,35 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       toast.error("Proveedor inválido");
       return;
     }
+    const nameKey = normalizeString((v.data.nombreComercial || v.data.razonSocial || "").trim());
+    const exists = suppliers.some((s) => normalizeString((s.nombreComercial || s.razonSocial || s.name || "").trim()) === nameKey);
+    if (exists) {
+      toast.error("El proveedor ya existe");
+      return;
+    }
+    const rucNum = (v.data.ruc || "").replace(/\D/g, "");
+    if (rucNum) {
+      const rucExists = suppliers.some((s) => (s.ruc || "").replace(/\D/g, "") === rucNum);
+      if (rucExists) {
+        toast.error("RUC ya registrado");
+        return;
+      }
+    }
+    const cedNum = (v.data.cedula || "").replace(/\D/g, "");
+    if (cedNum) {
+      const cedExists = suppliers.some((s) => (s.cedula || "").replace(/\D/g, "") === cedNum);
+      if (cedExists) {
+        toast.error("Cédula ya registrada");
+        return;
+      }
+    }
     const newSupplier: Supplier = {
       ...v.data,
       name: v.data.nombreComercial || v.data.razonSocial,
       id: Date.now().toString(),
     };
     setSuppliers((prev) => [...prev, newSupplier]);
+    publish("inventory.supplier.add", newSupplier);
   };
 
   const updateSupplier = (id: string, updates: Partial<Supplier>) => {
@@ -484,6 +576,35 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     if (!v.success) {
       toast.error("Actualización de proveedor inválida");
       return;
+    }
+    const candidateName = v.data.nombreComercial ?? v.data.razonSocial;
+    if (candidateName !== undefined) {
+      const nameKey = normalizeString(String(candidateName).trim());
+      const exists = suppliers.some((s) => s.id !== id && normalizeString((s.nombreComercial || s.razonSocial || s.name || "").trim()) === nameKey);
+      if (exists) {
+        toast.error("Ya existe un proveedor con ese nombre");
+        return;
+      }
+    }
+    if (v.data.ruc !== undefined) {
+      const rucNum = String(v.data.ruc || "").replace(/\D/g, "");
+      if (rucNum) {
+        const rucExists = suppliers.some((s) => s.id !== id && (s.ruc || "").replace(/\D/g, "") === rucNum);
+        if (rucExists) {
+          toast.error("RUC ya registrado");
+          return;
+        }
+      }
+    }
+    if (v.data.cedula !== undefined) {
+      const cedNum = String(v.data.cedula || "").replace(/\D/g, "");
+      if (cedNum) {
+        const cedExists = suppliers.some((s) => s.id !== id && (s.cedula || "").replace(/\D/g, "") === cedNum);
+        if (cedExists) {
+          toast.error("Cédula ya registrada");
+          return;
+        }
+      }
     }
     setSuppliers((prev) =>
       prev.map((sup) =>
@@ -499,6 +620,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
           : sup
       )
     );
+    publish("inventory.supplier.update", { id, updates: v.data });
   };
 
   const deleteSupplier = (id: string) => {
@@ -511,6 +633,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setSuppliers((prev) => prev.filter((sup) => sup.id !== id));
+    publish("inventory.supplier.delete", { id });
   };
 
   // Funciones auxiliares
@@ -523,6 +646,61 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const supplier = suppliers.find((sup) => sup.id === id);
     return supplier ? supplier.name : "Proveedor no encontrado";
   };
+
+  useEffect(() => {
+    const unsub1 = subscribe("inventory.medication.add", (med: Medication, source) => {
+      if (source === clientId) return;
+      setMedications((prev) => [...prev, med]);
+    });
+    const unsub2 = subscribe("inventory.medication.update", (data: { id: string; updates: Partial<Medication> }, source) => {
+      if (source === clientId) return;
+      setMedications((prev) => prev.map((m) => (m.id === data.id ? { ...m, ...data.updates, lastUpdated: new Date() } : m)));
+    });
+    const unsub3 = subscribe("inventory.medication.delete", (data: { id: string }, source) => {
+      if (source === clientId) return;
+      setMedications((prev) => prev.filter((m) => m.id !== data.id));
+    });
+    const unsub4 = subscribe("inventory.movement.add", (mv: InventoryMovement, source) => {
+      if (source === clientId) return;
+      setMovements((prev) => [mv, ...prev]);
+    });
+    const unsub5 = subscribe("inventory.category.add", (cat: Category, source) => {
+      if (source === clientId) return;
+      setCategories((prev) => [...prev, cat]);
+    });
+    const unsub6 = subscribe("inventory.category.update", (data: { id: string; updates: Partial<Category> }, source) => {
+      if (source === clientId) return;
+      setCategories((prev) => prev.map((c) => (c.id === data.id ? { ...c, ...data.updates } : c)));
+    });
+    const unsub7 = subscribe("inventory.category.delete", (data: { id: string }, source) => {
+      if (source === clientId) return;
+      setCategories((prev) => prev.filter((c) => c.id !== data.id));
+    });
+    const unsub8 = subscribe("inventory.supplier.add", (sup: Supplier, source) => {
+      if (source === clientId) return;
+      setSuppliers((prev) => [...prev, sup]);
+    });
+    const unsub9 = subscribe("inventory.supplier.update", (data: { id: string; updates: Partial<Supplier> }, source) => {
+      if (source === clientId) return;
+      setSuppliers((prev) => prev.map((s) => (s.id === data.id ? { ...s, ...data.updates } : s)));
+    });
+    const unsub10 = subscribe("inventory.supplier.delete", (data: { id: string }, source) => {
+      if (source === clientId) return;
+      setSuppliers((prev) => prev.filter((s) => s.id !== data.id));
+    });
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+      unsub5();
+      unsub6();
+      unsub7();
+      unsub8();
+      unsub9();
+      unsub10();
+    };
+  }, [clientId, subscribe]);
 
   return (
     <InventoryContext.Provider

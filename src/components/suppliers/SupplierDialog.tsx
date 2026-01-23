@@ -39,6 +39,7 @@ import {
 } from "@/lib/schemas";
 import type { Supplier } from "@/lib/types";
 import { formatEcPhone } from "@/lib/utils";
+import { ecuador } from "@/lib/citys";
 
 interface SupplierDialogProps {
   open: boolean;
@@ -66,6 +67,7 @@ export function SupplierDialog({
   const [loading, setLoading] = useState(false);
   const { addSupplier, updateSupplier } = useInventory();
   const isEditing = !!supplier;
+  const cantonOptions = ecuador.flatMap((p) => p.cantones.map((c) => ({ canton: c, provincia: p.provincia })));
   const form = useZodForm<{
     nombreComercial: string;
     razonSocial: string;
@@ -77,6 +79,8 @@ export function SupplierDialog({
     contact?: string;
     phone?: string;
     email?: string;
+    city?: string;
+    state?: string;
   }>(isEditing ? SupplierUpdateSchema : SupplierCreateSchema, {
     mode: "onChange",
     defaultValues: {
@@ -90,6 +94,8 @@ export function SupplierDialog({
       contact: "",
       phone: "",
       email: "",
+      city: "",
+      state: "",
     },
   });
 
@@ -108,6 +114,8 @@ export function SupplierDialog({
         contact: supplier.contact || "",
         phone: supplier.phone || "",
         email: supplier.email || "",
+        city: (supplier as any).city || "",
+        state: (supplier as any).state || "",
       });
     } else {
       form.reset({
@@ -121,6 +129,8 @@ export function SupplierDialog({
         contact: "",
         phone: "",
         email: "",
+        city: "",
+        state: "",
       });
     }
   }, [supplier, open, form]);
@@ -291,6 +301,58 @@ export function SupplierDialog({
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cantón</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Escribe el cantón"
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          field.onChange(v);
+                          const nv = v
+                            .toLowerCase()
+                            .normalize("NFD")
+                            .replace(/[\u0300-\u036f]/g, "");
+                          if (nv.length >= 3) {
+                            const match = cantonOptions.find((o) =>
+                              o.canton
+                                .toLowerCase()
+                                .normalize("NFD")
+                                .replace(/[\u0300-\u036f]/g, "")
+                                .startsWith(nv)
+                            );
+                            if (match) {
+                              form.setValue("city", match.canton, { shouldValidate: true, shouldDirty: true });
+                              form.setValue("state", match.provincia, { shouldValidate: true, shouldDirty: true });
+                            }
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Provincia</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Se completa al elegir cantón" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {isEditing ? (
                 <FormField
                   control={form.control}

@@ -10,9 +10,8 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Package, BarChart3, FileText } from "lucide-react";
+import { Download, BarChart3, FileText } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
-import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportData, ReportHistoryItem } from "./report/types";
 import { generateReportData } from "@/utils/report-generator";
@@ -25,7 +24,7 @@ import { useAlerts } from "@/context/AlertsContext";
 
 export function ReportsPage() {
   const { medications, movements } = useInventory();
-  const { alerts } = useAlerts();
+  const { alerts, unresolvedAlerts } = useAlerts();
   const [reportType, setReportType] = useState("inventory");
   const [formatType, setFormatType] = useState("pdf");
   const [dateFrom, setDateFrom] = useState<Date>();
@@ -118,11 +117,6 @@ export function ReportsPage() {
       return;
     }
 
-    setIsGenerating(true);
-
-    // Simular generación de reporte
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
     const reportData = generateReportData(
       reportType,
       dateFrom,
@@ -130,7 +124,7 @@ export function ReportsPage() {
       category,
       supplierFilter,
       batchFilter,
-      { medications, movements, alerts }
+      { medications, movements, alerts: unresolvedAlerts }
     );
 
     setCurrentReportData(reportData);
@@ -155,7 +149,6 @@ export function ReportsPage() {
     };
 
     setReportHistory((prev) => [newReport, ...prev]);
-    setIsGenerating(false);
 
     toast({
       title: "Reporte generado",
@@ -172,7 +165,7 @@ export function ReportsPage() {
       category,
       supplierFilter,
       batchFilter,
-      { medications, movements, alerts }
+      { medications, movements, alerts: unresolvedAlerts }
     );
 
     if (formatType === "pdf") {
@@ -186,6 +179,32 @@ export function ReportsPage() {
       description: "El reporte se está descargando",
     });
   };
+
+  // Actualizar vista previa automáticamente cuando cambian las opciones o los datos fuente
+  useEffect(() => {
+    const data = generateReportData(
+      reportType,
+      dateFrom,
+      dateTo,
+      category,
+      supplierFilter,
+      batchFilter,
+      { medications, movements, alerts: unresolvedAlerts },
+    );
+    setCurrentReportData(data);
+    setShowPreview(true);
+  }, [
+    reportType,
+    formatType,
+    dateFrom,
+    dateTo,
+    category,
+    supplierFilter,
+    batchFilter,
+    medications,
+    movements,
+    unresolvedAlerts,
+  ]);
 
   const handleDownloadHistoryItem = (reportId: number) => {
     const report = reportHistory.find((item) => item.id === reportId);
@@ -260,14 +279,7 @@ export function ReportsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="flex justify-end mb-6">
-            <Link href="/inventario">
-              <Button className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Ver Inventario
-              </Button>
-            </Link>
-          </div>
+          
 
           <div className="p-6 space-y-6">
             <div className="grid gap-6 lg:grid-cols-3">

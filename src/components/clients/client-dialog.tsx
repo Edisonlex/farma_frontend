@@ -23,8 +23,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ecuador } from "@/lib/citys";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { useToast } from "@/hooks/use-toast";
 import { formatEcPhone, formatEcDocument } from "@/lib/utils";
 import {
   Form,
@@ -53,7 +55,9 @@ export function ClientDialog({
   onSave,
 }: ClientDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const isEditing = !!client;
+  const cantonOptions = ecuador.flatMap((p) => p.cantones.map((c) => ({ canton: c, provincia: p.provincia })));
   const form = useZodForm<{
     name: string;
     email?: string;
@@ -146,9 +150,25 @@ export function ClientDialog({
         birthDate: values.birthDate ? new Date(values.birthDate) : null,
       };
       onSave(clientData);
+      toast({ title: "Cliente creado", description: "Se agregó el cliente" });
+      onOpenChange(false);
     } finally {
       setLoading(false);
     }
+  };
+
+  const onInvalid = (errors: any) => {
+    const firstKey = Object.keys(errors)[0];
+    const msg = errors[firstKey]?.message || "Revisa los campos requeridos";
+    toast({ title: "Formulario inválido", description: msg, variant: "destructive" });
+    try {
+      // Enfocar y desplazar al primer campo con error
+      if (firstKey) {
+        form.setFocus(firstKey as any);
+        const el = document.querySelector(`[name="${firstKey}"]`) as HTMLElement | null;
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    } catch {}
   };
 
   return (
@@ -167,9 +187,21 @@ export function ClientDialog({
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(onSubmit, onInvalid)}
             className="space-y-5 sm:space-y-6 px-4 sm:px-6 py-4"
           >
+            {Object.keys(form.formState.errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  Corrige {Object.keys(form.formState.errors).length} campos antes de guardar
+                  <div className="mt-2 space-y-1 text-xs">
+                    {Object.entries(form.formState.errors).map(([k, v]) => (
+                      <div key={k}>{k}: {(v as any)?.message || "Campo inválido"}</div>
+                    ))}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
             {/* Información Básica */}
             <div className="space-y-3 sm:space-y-4">
               <h3 className="text-sm sm:text-base font-medium">
@@ -296,13 +328,14 @@ export function ClientDialog({
                             // Restrict to numbers only
                             const val = e.target.value.replace(/\D/g, "");
                             field.onChange(formatEcDocument(val));
+                            form.trigger("document");
                           }}
                         />
                       </FormControl>
                       <FormDescription>
-                        {form.watch("type") === "particular"
-                          ? "Cédula: 10 dígitos numéricos (se valida algoritmo)"
-                          : "RUC: 13 dígitos numéricos (se valida algoritmo)"}
+                          {form.watch("type") === "particular"
+                          ? "Cédula: 10 dígitos numéricos"
+                          : "RUC: 13 dígitos numéricos"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -323,24 +356,28 @@ export function ClientDialog({
                             placeholder="AAAA-MM-DD"
                             value={field.value || ""}
                             onChange={(e) => {
-                              const s = e.target.value.replace(/\D/g, "");
-                              let y = s.slice(0, 4);
-                              let m = s.slice(4, 6);
-                              let d = s.slice(6, 8);
-                              // Auto-format logic...
-                              const nowY = new Date().getFullYear();
+                              const raw = e.target.value.replace(/\D/g, "");
+                              let y = raw.slice(0, 4);
+                              let m = raw.slice(4, 6);
+                              let d = raw.slice(6, 8);
+
+                              const now = new Date();
+                              const nowY = now.getFullYear();
+
                               if (y.length === 4) {
                                 let yi = parseInt(y, 10);
                                 if (yi < 1900) yi = 1900;
                                 if (yi > nowY) yi = nowY;
                                 y = String(yi).padStart(4, "0");
                               }
+
                               if (m.length === 2) {
                                 let mi = parseInt(m, 10);
                                 if (mi < 1) mi = 1;
                                 if (mi > 12) mi = 12;
                                 m = String(mi).padStart(2, "0");
                               }
+
                               if (d.length === 2) {
                                 let di = parseInt(d, 10);
                                 if (di < 1) di = 1;
@@ -350,17 +387,35 @@ export function ClientDialog({
                                   const mi = parseInt(m, 10);
                                   const maxDay = new Date(yi, mi, 0).getDate();
                                   if (di > maxDay) di = maxDay;
+
+                                  // Clamp to today if candidate is in the future
+                                  const candidate = new Date(yi, mi - 1, di);
+                                  if (candidate > now) {
+                                    const ty = now.getFullYear();
+                                    const tm = now.getMonth() + 1;
+                                    const td = now.getDate();
+                                    y = String(ty).padStart(4, "0");
+                                    m = String(tm).padStart(2, "0");
+                                    di = td;
+                                  }
                                 }
                                 d = String(di).padStart(2, "0");
                               }
-                              const masked = [y, m, d]
-                                .filter(Boolean)
-                                .join("-");
+
+                              const masked = [y, m, d].filter(Boolean).join("-");
                               field.onChange(masked);
+                              // Trigger Zod validation immediately
+                              form.trigger("birthDate");
                             }}
                           />
                         </FormControl>
-                        <FormDescription>Formato AAAA-MM-DD</FormDescription>
+                        <FormDescription>
+                          {field.value && field.value.length > 0
+                            ? !form.formState.errors.birthDate && (
+                                <span className="text-green-600">✓ Fecha válida</span>
+                              )
+                            : "Formato AAAA-MM-DD · mayor de 18"}
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -487,11 +542,48 @@ export function ClientDialog({
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ciudad</FormLabel>
+                      <FormLabel>Cantón</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          placeholder="Escribe el cantón"
+                          value={field.value || ""}
+                          list="canton-list"
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            field.onChange(v);
+                            const nv = v
+                              .toLowerCase()
+                              .normalize("NFD")
+                              .replace(/[\u0300-\u036f]/g, "");
+                            if (nv.length >= 2) {
+                              const match =
+                                cantonOptions.find((o) =>
+                                  o.canton
+                                    .toLowerCase()
+                                    .normalize("NFD")
+                                    .replace(/[\u0300-\u036f]/g, "")
+                                    .startsWith(nv)
+                                ) ||
+                                cantonOptions.find((o) =>
+                                  o.canton
+                                    .toLowerCase()
+                                    .normalize("NFD")
+                                    .replace(/[\u0300-\u036f]/g, "")
+                                    .includes(nv)
+                                );
+                              if (match) {
+                                form.setValue("city", match.canton, { shouldValidate: true, shouldDirty: true });
+                                form.setValue("state", match.provincia, { shouldValidate: true, shouldDirty: true });
+                              }
+                            }
+                          }}
+                        />
                       </FormControl>
-                      <FormDescription>Ciudad de residencia.</FormDescription>
+                      <datalist id="canton-list">
+                        {cantonOptions.map((o) => (
+                          <option key={`${o.provincia}-${o.canton}`} value={o.canton} />
+                        ))}
+                      </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -502,11 +594,10 @@ export function ClientDialog({
                   name="state"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estado/Provincia</FormLabel>
+                      <FormLabel>Provincia</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
-                      <FormDescription>Provincia o estado</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -537,29 +628,38 @@ export function ClientDialog({
                 )}
               />
 
-              <div className="flex items-center space-x-2">
-                <FormField
-                  control={form.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cliente Activo</FormLabel>
-                      <FormControl>
-                        <Switch
-                          id="isActive"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Desactiva para evitar operaciones sin eliminar datos
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Label htmlFor="isActive">Cliente Activo</Label>
-              </div>
+              {isEditing ? (
+                <div className="flex items-center space-x-2">
+                  <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cliente Activo</FormLabel>
+                        <FormControl>
+                          <Switch
+                            id="isActive"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Desactiva para evitar operaciones sin eliminar datos
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Label htmlFor="isActive">Cliente Activo</Label>
+                </div>
+              ) : (
+                <FormItem>
+                  <FormLabel>Estado</FormLabel>
+                  <div className="text-sm px-3 py-2 rounded-md border bg-muted">
+                    Activo (por defecto)
+                  </div>
+                </FormItem>
+              )}
             </div>
 
             {/* Botones */}
@@ -572,8 +672,20 @@ export function ClientDialog({
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="w-full sm:w-auto">
-                {client ? "Actualizar" : "Crear"} Cliente
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                disabled={loading}
+                onClick={() => form.handleSubmit(onSubmit, onInvalid)()}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>{client ? "Actualizar" : "Crear"} Cliente</>
+                )}
               </Button>
             </div>
           </form>

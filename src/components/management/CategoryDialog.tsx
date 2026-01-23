@@ -47,6 +47,7 @@ export function CategoryDialog({
   const form = useZodForm<{ name: string; description?: string }>(
     isEditing ? CategorySchema.partial() : CategoryCreateSchema,
     {
+      mode: "onChange",
       defaultValues: {
         name: "",
         description: "",

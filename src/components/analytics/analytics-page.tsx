@@ -54,11 +54,12 @@ export function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
   // Función para cargar todos los datos
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = async (initial = false) => {
     try {
-      setIsLoading(true);
+      if (initial) setIsLoading(true);
       setError(null);
 
       const predictions = generatePredictionsFromInventory(medications as any, movements as any);
@@ -77,23 +78,24 @@ export function AnalyticsPage() {
         trendData,
         seasonalityData,
       });
+      setUpdatedAt(new Date());
     } catch (err) {
       setError("Error al cargar los datos analíticos");
       console.error("Error loading analytics data:", err);
     } finally {
-      setIsLoading(false);
+      if (initial) setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
   // Cargar datos iniciales
   useEffect(() => {
-    loadAnalyticsData();
+    loadAnalyticsData(true);
   }, []);
 
   const refreshPredictions = async () => {
     setIsRefreshing(true);
-    await loadAnalyticsData();
+    await loadAnalyticsData(false);
   };
 
   if (isLoading) {
@@ -149,6 +151,11 @@ export function AnalyticsPage() {
               />
               {isRefreshing ? "Actualizando..." : "Actualizar"}
             </Button>
+            {updatedAt && (
+              <span className="ml-3 text-xs text-muted-foreground">
+                Última actualización: {updatedAt.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+            )}
           </div>
 
           {/* Analytics Stats */}

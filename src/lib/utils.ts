@@ -67,8 +67,7 @@ export function isValidRuc(ruc: string) {
 
 export function isValidEcuadorDocument(input: string) {
   const s = input.replace(/[^0-9]/g, "");
-  if (s.length === 10) return isValidCedula(s);
-  if (s.length === 13) return isValidRuc(s);
+  if (s.length === 10 || s.length === 13) return /^[0-9]+$/.test(s);
   return false;
 }
 
@@ -96,6 +95,24 @@ export const getDefaultImageForName = (name: string) => {
   // Fallbacks para otros comunes (si se agregan las imágenes después)
   if (key.includes("insulina")) return "/insulina nph.jpg";
   if (key.includes("azitromicina")) return "/azitromicina 500mg.jpg";
-  
+
   return `https://picsum.photos/seed/${encodeURIComponent(name || "med")}/200`;
 };
+
+const LETTERS = "A-Za-zÁÉÍÓÚÜÑáéíóúüñ";
+
+export function isValidPersonName(name: string) {
+  const s = (name || "").trim();
+  if (s.length < 2 || s.length > 80) return false;
+  if (/\d/.test(s)) return false;
+  if (/(.)\1{3,}/.test(s)) return false;
+  return new RegExp(`^[${LETTERS}][${LETTERS}\s'-]*$`).test(s);
+}
+
+export function isValidEntityName(name: string) {
+  const s = (name || "").trim();
+  if (s.length < 2 || s.length > 100) return false;
+  if (/(.)\1{3,}/.test(s)) return false;
+  // Permite letras, números, espacios y caracteres comunes en nombres de productos
+  return /^[A-Za-z0-9\s.,'()&-/\u0026]+$/.test(s);
+}

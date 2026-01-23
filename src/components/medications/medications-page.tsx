@@ -11,6 +11,8 @@ import { ActionsBar } from "./actions-bar";
 import { MedicationsContent } from "./medications-content";
 import { useInventory } from "@/context/inventory-context"; // Importar el contexto
 import type { Medication } from "@/lib/types";
+import type { z } from "zod";
+import { MedicationCreateSchema } from "@/lib/schemas";
 
 export function MedicationsPage() {
   const { user } = useAuth();
@@ -18,6 +20,7 @@ export function MedicationsPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMedication, setEditingMedication] = useState<Medication | null>(
@@ -47,7 +50,22 @@ export function MedicationsPage() {
     const matchesCategory =
       selectedCategory === "all" || med.category === selectedCategory;
 
-    return matchesSearch && matchesCategory;
+    const today = new Date(new Date().setHours(0, 0, 0, 0));
+    const daysToExpiry = Math.ceil(
+      (med.expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const isActivo = med.quantity > 0 && med.expiryDate >= today;
+    const isInactivo = med.quantity === 0;
+    const isPendiente =
+      med.quantity > 0 && (med.quantity <= med.minStock || daysToExpiry <= 30);
+
+    const matchesStatus =
+      selectedStatus === "all" ||
+      (selectedStatus === "activo" && isActivo) ||
+      (selectedStatus === "inactivo" && isInactivo) ||
+      (selectedStatus === "pendiente" && isPendiente);
+
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const categories = Array.from(
@@ -55,7 +73,7 @@ export function MedicationsPage() {
   );
 
   const handleSaveMedication = (
-    medicationData: Medication | Omit<Medication, "id">
+    medicationData: Medication | z.infer<typeof MedicationCreateSchema>
   ) => {
     if ("id" in medicationData) {
       // Es una edición (tiene id)
@@ -63,7 +81,7 @@ export function MedicationsPage() {
       setEditingMedication(null);
     } else {
       // Es una adición nueva (no tiene id)
-      addMedication(medicationData);
+      addMedication(medicationData as any);
     }
     setDialogOpen(false);
   };
@@ -110,6 +128,8 @@ export function MedicationsPage() {
           categories={categories}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
+          selectedStatus={selectedStatus}
+          setSelectedStatus={setSelectedStatus}
           medications={medications}
           filteredMedications={filteredMedications}
           canManage={canManage}
