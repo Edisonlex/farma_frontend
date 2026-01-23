@@ -1,4 +1,5 @@
-const baseUrl = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL || "") : "";
+const baseUrl =
+  typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL || "" : "";
 
 export function hasApi() {
   return !!baseUrl;
